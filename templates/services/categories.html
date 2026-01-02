@@ -1,0 +1,72 @@
+{% extends "ui/module_content.html" %}
+{% load static i18n ui %}
+
+{% block header_actions %}
+<ion-button href="{% url 'services:category_create' %}">
+    <ion-icon slot="start" name="add-outline"></ion-icon>
+    {% trans "Add Category" %}
+</ion-button>
+{% endblock %}
+
+{% block content %}
+{# Search #}
+{% ui_card %}
+    <ion-searchbar
+        placeholder="{% trans 'Search categories...' %}"
+        value="{{ search }}"
+        hx-get="{% url 'services:categories' %}"
+        hx-target="#categories-list"
+        hx-trigger="input changed delay:300ms"
+        name="search"
+    ></ion-searchbar>
+{% endui_card %}
+
+{# Categories List #}
+<div id="categories-list">
+    {% if categories %}
+    {% ui_card %}
+    <ion-list>
+        {% for category in categories %}
+        <ion-item-sliding>
+            <ion-item href="{% url 'services:category_detail' category.pk %}" detail>
+                {% if category.icon %}
+                <ion-icon slot="start" name="{{ category.icon }}" {% if category.color %}style="color: {{ category.color }}"{% endif %}></ion-icon>
+                {% else %}
+                <ion-icon slot="start" name="folder-outline" color="primary"></ion-icon>
+                {% endif %}
+                <ion-label>
+                    <h2>{{ category.name }}</h2>
+                    {% if category.parent %}
+                    <p>{% trans "Parent" %}: {{ category.parent.name }}</p>
+                    {% endif %}
+                </ion-label>
+                <ion-note slot="end">{{ category.service_count }} {% trans "services" %}</ion-note>
+                {% if not category.is_active %}
+                <ion-badge color="medium" slot="end">{% trans "Inactive" %}</ion-badge>
+                {% endif %}
+            </ion-item>
+
+            <ion-item-options side="end">
+                <ion-item-option color="primary" href="{% url 'services:category_edit' category.pk %}">
+                    <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+                </ion-item-option>
+                <ion-item-option
+                    color="danger"
+                    hx-post="{% url 'services:category_delete' category.pk %}"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                    hx-confirm="{% trans 'Delete this category? Services will be moved to parent.' %}"
+                    hx-swap="none"
+                    hx-on::after-request="location.reload()"
+                >
+                    <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                </ion-item-option>
+            </ion-item-options>
+        </ion-item-sliding>
+        {% endfor %}
+    </ion-list>
+    {% endui_card %}
+    {% else %}
+    {% ui_empty_state title=_("No categories yet") icon="folder-outline" description=_("Create categories to organize your services.") %}
+    {% endif %}
+</div>
+{% endblock %}

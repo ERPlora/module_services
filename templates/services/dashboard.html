@@ -1,0 +1,106 @@
+{% extends "ui/module_content.html" %}
+{% load static i18n ui %}
+
+{% block content %}
+{# Stats Cards #}
+<div class="ui-grid ui-grid--stats mb-lg">
+    {% ui_stat_card value=stats.active_services label=_("Active Services") icon="construct-outline" color="primary" %}
+    {% ui_stat_card value=stats.categories label=_("Categories") icon="folder-outline" color="secondary" %}
+    {% ui_stat_card value=stats.bookable_services label=_("Bookable") icon="calendar-outline" color="success" %}
+    {% ui_stat_card value=stats.packages label=_("Packages") icon="gift-outline" color="warning" %}
+</div>
+
+{# Price Stats #}
+<div class="ui-grid ui-grid--3 mb-lg">
+    {% ui_card %}
+        <div class="text-center">
+            <div class="fs-sm text-secondary mb-xs">{% trans "Avg. Price" %}</div>
+            <div class="fs-xl fw-semibold">{{ stats.avg_price|floatformat:2 }} €</div>
+        </div>
+    {% endui_card %}
+    {% ui_card %}
+        <div class="text-center">
+            <div class="fs-sm text-secondary mb-xs">{% trans "Min. Price" %}</div>
+            <div class="fs-xl fw-semibold">{{ stats.min_price|floatformat:2 }} €</div>
+        </div>
+    {% endui_card %}
+    {% ui_card %}
+        <div class="text-center">
+            <div class="fs-sm text-secondary mb-xs">{% trans "Max. Price" %}</div>
+            <div class="fs-xl fw-semibold">{{ stats.max_price|floatformat:2 }} €</div>
+        </div>
+    {% endui_card %}
+</div>
+
+<div class="ui-grid ui-grid--2">
+    {# Recent Services #}
+    {% ui_card %}
+        <div class="d-flex justify-between align-center mb-md">
+            <h3 class="fs-lg fw-semibold m-0">{% trans "Recent Services" %}</h3>
+            <ion-button fill="clear" size="small" href="{% url 'services:list' %}">
+                {% trans "View All" %}
+            </ion-button>
+        </div>
+
+        {% if recent_services %}
+        <ion-list>
+            {% for service in recent_services %}
+            <ion-item href="{% url 'services:detail' service.pk %}" detail>
+                <ion-icon slot="start" name="construct-outline" color="primary"></ion-icon>
+                <ion-label>
+                    <h3>{{ service.name }}</h3>
+                    <p>{{ service.duration_minutes }} min - {{ service.price }} €</p>
+                </ion-label>
+                {% if service.is_bookable %}
+                <ion-badge color="success" slot="end">{% trans "Bookable" %}</ion-badge>
+                {% endif %}
+            </ion-item>
+            {% endfor %}
+        </ion-list>
+        {% else %}
+        {% ui_empty_state title=_("No services yet") icon="construct-outline" description=_("Create your first service to get started.") %}
+        {% endif %}
+    {% endui_card %}
+
+    {# Featured Services #}
+    {% ui_card %}
+        <div class="d-flex justify-between align-center mb-md">
+            <h3 class="fs-lg fw-semibold m-0">{% trans "Featured Services" %}</h3>
+        </div>
+
+        {% if featured_services %}
+        <ion-list>
+            {% for service in featured_services %}
+            <ion-item href="{% url 'services:detail' service.pk %}" detail>
+                <ion-icon slot="start" name="star" color="warning"></ion-icon>
+                <ion-label>
+                    <h3>{{ service.name }}</h3>
+                    <p>{{ service.category.name|default:_("Uncategorized") }}</p>
+                </ion-label>
+                <ion-note slot="end">{{ service.price }} €</ion-note>
+            </ion-item>
+            {% endfor %}
+        </ion-list>
+        {% else %}
+        {% ui_empty_state title=_("No featured services") icon="star-outline" description=_("Mark services as featured to highlight them.") %}
+        {% endif %}
+    {% endui_card %}
+</div>
+
+{# Categories Breakdown #}
+{% if stats.categories_breakdown %}
+{% ui_card %}
+    <div class="d-flex justify-between align-center mb-md">
+        <h3 class="fs-lg fw-semibold m-0">{% trans "Services by Category" %}</h3>
+    </div>
+    <div class="ui-grid ui-grid--4">
+        {% for cat in stats.categories_breakdown %}
+        <div class="text-center p-md">
+            <div class="fs-xl fw-bold text-primary">{{ cat.count }}</div>
+            <div class="fs-sm text-secondary">{{ cat.name }}</div>
+        </div>
+        {% endfor %}
+    </div>
+{% endui_card %}
+{% endif %}
+{% endblock %}

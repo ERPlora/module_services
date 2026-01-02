@@ -1,0 +1,195 @@
+{% extends "ui/app_base.html" %}
+{% load static i18n ui component_tags %}
+
+{% block page_title %}{{ service.name }}{% endblock %}
+
+{% block page_content %}
+{% ui_page_header title=service.name %}
+
+<div class="ion-padding">
+    {# Service Info Card #}
+    {% ui_card %}
+        <div class="d-flex justify-between align-center mb-md">
+            <div class="d-flex align-center gap-md">
+                {% if service.icon %}
+                <ion-icon name="{{ service.icon }}" size="large" {% if service.color %}style="color: {{ service.color }}"{% endif %}></ion-icon>
+                {% else %}
+                <ion-icon name="construct-outline" size="large" color="primary"></ion-icon>
+                {% endif %}
+                <div>
+                    <h2 class="m-0">{{ service.name }}</h2>
+                    <p class="text-secondary m-0">{{ service.category.name|default:_("Uncategorized") }}</p>
+                </div>
+            </div>
+            <div class="d-flex gap-sm">
+                {% if service.is_featured %}
+                <ion-badge color="warning">{% trans "Featured" %}</ion-badge>
+                {% endif %}
+                {% if not service.is_active %}
+                <ion-badge color="medium">{% trans "Inactive" %}</ion-badge>
+                {% endif %}
+                {% if service.is_bookable %}
+                <ion-badge color="success">{% trans "Bookable" %}</ion-badge>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if service.description %}
+        <p class="text-secondary mb-md">{{ service.description }}</p>
+        {% endif %}
+
+        <div class="ui-grid ui-grid--3">
+            <div class="text-center">
+                <div class="fs-xl fw-bold text-primary">{{ service.price }} €</div>
+                <div class="fs-sm text-secondary">{% trans "Price" %}</div>
+            </div>
+            <div class="text-center">
+                <div class="fs-xl fw-bold">{{ service.duration_minutes }} min</div>
+                <div class="fs-sm text-secondary">{% trans "Duration" %}</div>
+            </div>
+            <div class="text-center">
+                <div class="fs-xl fw-bold">{{ service.max_capacity }}</div>
+                <div class="fs-sm text-secondary">{% trans "Capacity" %}</div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-sm mt-lg">
+            <ion-button expand="block" class="flex-1" href="{% url 'services:edit' service.pk %}">
+                <ion-icon slot="start" name="create-outline"></ion-icon>
+                {% trans "Edit" %}
+            </ion-button>
+            <ion-button
+                expand="block"
+                fill="outline"
+                class="flex-1"
+                hx-post="{% url 'services:duplicate' service.pk %}"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                hx-swap="none"
+                hx-on::after-request="if(event.detail.successful) window.location.reload()"
+            >
+                <ion-icon slot="start" name="copy-outline"></ion-icon>
+                {% trans "Duplicate" %}
+            </ion-button>
+        </div>
+    {% endui_card %}
+
+    {# Pricing Details #}
+    {% ui_card %}
+        <h3 class="fs-lg fw-semibold mb-md">{% trans "Pricing Details" %}</h3>
+        <ion-list>
+            <ion-item>
+                <ion-label>{% trans "Pricing Type" %}</ion-label>
+                <ion-note slot="end">{{ service.get_pricing_type_display }}</ion-note>
+            </ion-item>
+            <ion-item>
+                <ion-label>{% trans "Price Display" %}</ion-label>
+                <ion-note slot="end">{{ service.get_price_display }}</ion-note>
+            </ion-item>
+            <ion-item>
+                <ion-label>{% trans "Price with Tax" %}</ion-label>
+                <ion-note slot="end">{{ service.price_with_tax|floatformat:2 }} €</ion-note>
+            </ion-item>
+            <ion-item>
+                <ion-label>{% trans "Tax Rate" %}</ion-label>
+                <ion-note slot="end">{{ service.effective_tax_rate }}%</ion-note>
+            </ion-item>
+            <ion-item>
+                <ion-label>{% trans "Cost" %}</ion-label>
+                <ion-note slot="end">{{ service.cost }} €</ion-note>
+            </ion-item>
+            <ion-item>
+                <ion-label>{% trans "Profit" %}</ion-label>
+                <ion-note slot="end" class="{% if service.profit > 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ service.profit|floatformat:2 }} € ({{ service.profit_margin|floatformat:1 }}%)
+                </ion-note>
+            </ion-item>
+        </ion-list>
+    {% endui_card %}
+
+    {# Variants #}
+    {% ui_card %}
+        <div class="d-flex justify-between align-center mb-md">
+            <h3 class="fs-lg fw-semibold m-0">{% trans "Variants" %}</h3>
+            <ion-button fill="clear" size="small" href="{% url 'services:variant_create' service.pk %}">
+                <ion-icon slot="start" name="add-outline"></ion-icon>
+                {% trans "Add" %}
+            </ion-button>
+        </div>
+
+        {% if variants %}
+        <ion-list>
+            {% for variant in variants %}
+            <ion-item-sliding>
+                <ion-item>
+                    <ion-label>
+                        <h3>{{ variant.name }}</h3>
+                        {% if variant.description %}
+                        <p>{{ variant.description }}</p>
+                        {% endif %}
+                    </ion-label>
+                    <ion-note slot="end">
+                        {{ variant.final_price }} € / {{ variant.final_duration }} min
+                    </ion-note>
+                </ion-item>
+                <ion-item-options side="end">
+                    <ion-item-option color="primary" href="{% url 'services:variant_edit' variant.pk %}">
+                        <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+                    </ion-item-option>
+                    <ion-item-option
+                        color="danger"
+                        hx-post="{% url 'services:variant_delete' variant.pk %}"
+                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                        hx-confirm="{% trans 'Delete this variant?' %}"
+                        hx-swap="none"
+                        hx-on::after-request="location.reload()"
+                    >
+                        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                    </ion-item-option>
+                </ion-item-options>
+            </ion-item-sliding>
+            {% endfor %}
+        </ion-list>
+        {% else %}
+        {% ui_empty_state title=_("No variants") icon="options-outline" description=_("Add variants for different options.") %}
+        {% endif %}
+    {% endui_card %}
+
+    {# Available Addons #}
+    {% if addons %}
+    {% ui_card %}
+        <h3 class="fs-lg fw-semibold mb-md">{% trans "Available Addons" %}</h3>
+        <ion-list>
+            {% for addon in addons %}
+            <ion-item>
+                <ion-label>
+                    <h3>{{ addon.name }}</h3>
+                    {% if addon.duration_minutes %}
+                    <p>+{{ addon.duration_minutes }} min</p>
+                    {% endif %}
+                </ion-label>
+                <ion-note slot="end">+{{ addon.price }} €</ion-note>
+            </ion-item>
+            {% endfor %}
+        </ion-list>
+    {% endui_card %}
+    {% endif %}
+
+    {# Included in Packages #}
+    {% if packages %}
+    {% ui_card %}
+        <h3 class="fs-lg fw-semibold mb-md">{% trans "Included in Packages" %}</h3>
+        <ion-list>
+            {% for package in packages %}
+            <ion-item href="{% url 'services:package_detail' package.pk %}" detail>
+                <ion-icon slot="start" name="gift-outline" color="warning"></ion-icon>
+                <ion-label>{{ package.name }}</ion-label>
+                <ion-note slot="end">{{ package.final_price }} €</ion-note>
+            </ion-item>
+            {% endfor %}
+        </ion-list>
+    {% endui_card %}
+    {% endif %}
+</div>
+
+{% component "tabbar" module_id="services" current_view="list" %}{% endcomponent %}
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "ui/module_content.html" %}
+{% load static i18n ui %}
+
+{% block header_actions %}
+<ion-button href="{% url 'services:create' %}">
+    <ion-icon slot="start" name="add-outline"></ion-icon>
+    {% trans "Add Service" %}
+</ion-button>
+{% endblock %}
+
+{% block content %}
+{# Filters #}
+{% ui_card %}
+    <div class="d-flex gap-md flex-wrap">
+        <ion-searchbar
+            placeholder="{% trans 'Search services...' %}"
+            value="{{ search }}"
+            hx-get="{% url 'services:list' %}"
+            hx-target="#services-list"
+            hx-trigger="input changed delay:300ms"
+            hx-include="[name='category'], [name='status']"
+            name="search"
+            class="flex-1"
+        ></ion-searchbar>
+
+        <ion-select
+            name="category"
+            placeholder="{% trans 'Category' %}"
+            interface="popover"
+            hx-get="{% url 'services:list' %}"
+            hx-target="#services-list"
+            hx-trigger="ionChange"
+            hx-include="[name='search'], [name='status']"
+            value="{{ selected_category|default:'' }}"
+        >
+            <ion-select-option value="">{% trans "All Categories" %}</ion-select-option>
+            {% for category in categories %}
+            <ion-select-option value="{{ category.id }}">{{ category.name }}</ion-select-option>
+            {% endfor %}
+        </ion-select>
+
+        <ion-select
+            name="status"
+            placeholder="{% trans 'Status' %}"
+            interface="popover"
+            hx-get="{% url 'services:list' %}"
+            hx-target="#services-list"
+            hx-trigger="ionChange"
+            hx-include="[name='search'], [name='category']"
+            value="{{ status }}"
+        >
+            <ion-select-option value="all">{% trans "All" %}</ion-select-option>
+            <ion-select-option value="active">{% trans "Active" %}</ion-select-option>
+            <ion-select-option value="inactive">{% trans "Inactive" %}</ion-select-option>
+        </ion-select>
+    </div>
+{% endui_card %}
+
+{# Services List #}
+<div id="services-list">
+    {% include "services/partials/service_list_items.html" %}
+</div>
+{% endblock %}

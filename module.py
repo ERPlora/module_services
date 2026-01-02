@@ -12,7 +12,15 @@ MODULE_ID = "services"
 MODULE_NAME = _("Services")
 MODULE_ICON = "construct-outline"
 MODULE_VERSION = "1.0.0"
-MODULE_CATEGORY = "services"
+MODULE_CATEGORY = "pos"  # Changed from "services" to valid category
+
+# Target Industries (business verticals this module is designed for)
+MODULE_INDUSTRIES = [
+    "salon",        # Beauty & wellness (peluquerías, spas)
+    "healthcare",   # Healthcare (clinics, medical)
+    "fitness",      # Fitness & sports (gyms)
+    "professional", # Professional services (consulting)
+]
 
 # Sidebar Menu Configuration
 MENU = {

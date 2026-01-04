@@ -28,7 +28,7 @@
 
         <ion-item-options side="end">
             <ion-item-option color="primary" href="{% url 'services:edit' service.pk %}">
-                <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+                {% icon "create-outline" %}
             </ion-item-option>
             <ion-item-option
                 color="warning"
@@ -37,7 +37,7 @@
                 hx-swap="none"
                 hx-on::after-request="location.reload()"
             >
-                <ion-icon slot="icon-only" name="{% if service.is_active %}eye-off-outline{% else %}eye-outline{% endif %}"></ion-icon>
+                {% icon "{% if service.is_active %}eye-off-outline{% else %}eye-outline{% endif %}" %}
             </ion-item-option>
             <ion-item-option
                 color="danger"
@@ -47,7 +47,7 @@
                 hx-swap="none"
                 hx-on::after-request="location.reload()"
             >
-                <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                {% icon "trash-outline" %}
             </ion-item-option>
         </ion-item-options>
     </ion-item-sliding>

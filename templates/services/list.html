@@ -3,7 +3,7 @@
 
 {% block header_actions %}
 <ion-button href="{% url 'services:create' %}">
-    <ion-icon slot="start" name="add-outline"></ion-icon>
+    {% icon "add-outline" %}
     {% trans "Add Service" %}
 </ion-button>
 {% endblock %}

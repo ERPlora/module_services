@@ -3,7 +3,7 @@
 
 {% block header_actions %}
 <ion-button href="{% url 'services:category_create' %}">
-    <ion-icon slot="start" name="add-outline"></ion-icon>
+    {% icon "add-outline" %}
     {% trans "Add Category" %}
 </ion-button>
 {% endblock %}
@@ -48,7 +48,7 @@
 
             <ion-item-options side="end">
                 <ion-item-option color="primary" href="{% url 'services:category_edit' category.pk %}">
-                    <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+                    {% icon "create-outline" %}
                 </ion-item-option>
                 <ion-item-option
                     color="danger"
@@ -58,7 +58,7 @@
                     hx-swap="none"
                     hx-on::after-request="location.reload()"
                 >
-                    <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                    {% icon "trash-outline" %}
                 </ion-item-option>
             </ion-item-options>
         </ion-item-sliding>

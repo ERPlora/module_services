@@ -55,7 +55,7 @@
 
         <div class="d-flex gap-sm mt-lg">
             <ion-button expand="block" class="flex-1" href="{% url 'services:edit' service.pk %}">
-                <ion-icon slot="start" name="create-outline"></ion-icon>
+                {% icon "create-outline" %}
                 {% trans "Edit" %}
             </ion-button>
             <ion-button
@@ -67,7 +67,7 @@
                 hx-swap="none"
                 hx-on::after-request="if(event.detail.successful) window.location.reload()"
             >
-                <ion-icon slot="start" name="copy-outline"></ion-icon>
+                {% icon "copy-outline" %}
                 {% trans "Duplicate" %}
             </ion-button>
         </div>
@@ -111,7 +111,7 @@
         <div class="d-flex justify-between align-center mb-md">
             <h3 class="fs-lg fw-semibold m-0">{% trans "Variants" %}</h3>
             <ion-button fill="clear" size="small" href="{% url 'services:variant_create' service.pk %}">
-                <ion-icon slot="start" name="add-outline"></ion-icon>
+                {% icon "add-outline" %}
                 {% trans "Add" %}
             </ion-button>
         </div>
@@ -133,7 +133,7 @@
                 </ion-item>
                 <ion-item-options side="end">
                     <ion-item-option color="primary" href="{% url 'services:variant_edit' variant.pk %}">
-                        <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+                        {% icon "create-outline" %}
                     </ion-item-option>
                     <ion-item-option
                         color="danger"
@@ -143,7 +143,7 @@
                         hx-swap="none"
                         hx-on::after-request="location.reload()"
                     >
-                        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                        {% icon "trash-outline" %}
                     </ion-item-option>
                 </ion-item-options>
             </ion-item-sliding>

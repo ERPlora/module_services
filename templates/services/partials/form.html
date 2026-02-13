@@ -1,0 +1,265 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Back Button -->
+    <button type="button"
+            hx-get="{% if mode == 'edit' %}{% url 'services:detail' service.pk %}{% else %}{% url 'services:list' %}{% endif %}"
+            hx-target="#main-content-area"
+            hx-push-url="true"
+            class="btn btn-ghost mb-3">
+        {% icon "arrow-back-outline" %}
+        {% if mode == 'edit' %}{% trans "Back to Service" %}{% else %}{% trans "Back to Services" %}{% endif %}
+    </button>
+
+    <form id="serviceForm" method="post">
+        {% csrf_token %}
+
+        <!-- Basic Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "information-circle-outline" css_class="text-primary" %} {% trans "Basic Information" %}</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_name">{% trans "Name" %} *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<p class="text-error text-xs mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_category">{% trans "Category" %}</label>
+                    {{ form.category }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_short_description">{% trans "Short Description" %}</label>
+                    {{ form.short_description }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_description">{% trans "Description" %}</label>
+                    {{ form.description }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "cash-outline" css_class="text-success" %} {% trans "Pricing" %}</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_pricing_type">{% trans "Pricing Type" %}</label>
+                    {{ form.pricing_type }}
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="form-group-label mb-1" for="id_price">{% trans "Price" %} (&euro;)</label>
+                        {{ form.price }}
+                    </div>
+                    <div>
+                        <label class="form-group-label mb-1" for="id_cost">{% trans "Cost" %} (&euro;)</label>
+                        {{ form.cost }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="form-group-label mb-1" for="id_min_price">{% trans "Min Price" %} (&euro;)</label>
+                        {{ form.min_price }}
+                    </div>
+                    <div>
+                        <label class="form-group-label mb-1" for="id_max_price">{% trans "Max Price" %} (&euro;)</label>
+                        {{ form.max_price }}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_tax_rate">{% trans "Tax Rate" %} (%)</label>
+                    {{ form.tax_rate }}
+                    <p class="text-xs text-muted mt-1">{% trans "Leave empty to use the default tax rate" %}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Duration -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "time-outline" css_class="text-warning" %} {% trans "Duration" %}</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_duration_minutes">{% trans "Duration (minutes)" %} *</label>
+                    {{ form.duration_minutes }}
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="form-group-label mb-1" for="id_buffer_before">{% trans "Buffer Before (min)" %}</label>
+                        {{ form.buffer_before }}
+                        <p class="text-xs text-muted mt-1">{% trans "Preparation time" %}</p>
+                    </div>
+                    <div>
+                        <label class="form-group-label mb-1" for="id_buffer_after">{% trans "Buffer After (min)" %}</label>
+                        {{ form.buffer_after }}
+                        <p class="text-xs text-muted mt-1">{% trans "Cleanup time" %}</p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_max_capacity">{% trans "Max Capacity" %}</label>
+                    {{ form.max_capacity }}
+                    <p class="text-xs text-muted mt-1">{% trans "Max simultaneous bookings" %}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Options -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "calendar-outline" css_class="text-primary" %} {% trans "Booking Options" %}</h3>
+            </div>
+            <div class="list">
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Is Bookable" %}</div>
+                        <div class="list-item-note">{% trans "Can be booked through appointments" %}</div>
+                    </div>
+                    <div class="list-item-end">
+                        <label class="toggle">
+                            <input type="checkbox" name="is_bookable" {% if form.is_bookable.value or mode == 'create' %}checked{% endif %}>
+                            
+                        </label>
+                    </div>
+                </div>
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Allow Online Booking" %}</div>
+                        <div class="list-item-note">{% trans "Clients can book this online" %}</div>
+                    </div>
+                    <div class="list-item-end">
+                        <label class="toggle">
+                            <input type="checkbox" name="allow_online_booking" {% if form.allow_online_booking.value or mode == 'create' %}checked{% endif %}>
+                            
+                        </label>
+                    </div>
+                </div>
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Requires Confirmation" %}</div>
+                        <div class="list-item-note">{% trans "Bookings need manual approval" %}</div>
+                    </div>
+                    <div class="list-item-end">
+                        <label class="toggle">
+                            <input type="checkbox" name="requires_confirmation" {% if form.requires_confirmation.value %}checked{% endif %}>
+                            
+                        </label>
+                    </div>
+                </div>
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Featured" %}</div>
+                        <div class="list-item-note">{% trans "Highlight on the dashboard" %}</div>
+                    </div>
+                    <div class="list-item-end">
+                        <label class="toggle">
+                            <input type="checkbox" name="is_featured" {% if form.is_featured.value %}checked{% endif %}>
+                            
+                        </label>
+                    </div>
+                </div>
+                {% if mode == 'edit' %}
+                <div class="list-item">
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Active" %}</div>
+                        <div class="list-item-note">{% trans "Service is visible and available" %}</div>
+                    </div>
+                    <div class="list-item-end">
+                        <label class="toggle">
+                            <input type="checkbox" name="is_active" {% if form.is_active.value %}checked{% endif %}>
+                            
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">{% icon "ellipsis-horizontal-outline" css_class="text-muted" %} {% trans "Additional Information" %}</h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="form-group-label mb-1" for="id_sku">{% trans "SKU" %}</label>
+                        {{ form.sku }}
+                    </div>
+                    <div>
+                        <label class="form-group-label mb-1" for="id_barcode">{% trans "Barcode" %}</label>
+                        {{ form.barcode }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="form-group-label mb-1" for="id_icon">{% trans "Icon" %}</label>
+                        {{ form.icon }}
+                        <p class="text-xs text-muted mt-1">{% trans "e.g. briefcase-outline" %}</p>
+                    </div>
+                    <div>
+                        <label class="form-group-label mb-1" for="id_color">{% trans "Color" %}</label>
+                        {{ form.color }}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_sort_order">{% trans "Sort Order" %}</label>
+                    {{ form.sort_order }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-group-label mb-1" for="id_notes">{% trans "Internal Notes" %}</label>
+                    {{ form.notes }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn btn-block color-primary">
+            {% icon "save-outline" %}
+            {% if mode == 'edit' %}{% trans "Save Changes" %}{% else %}{% trans "Create Service" %}{% endif %}
+        </button>
+    </form>
+</div>
+
+<script>
+document.getElementById('serviceForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-CSRFToken': formData.get('csrfmiddlewaretoken')},
+        });
+        const result = await response.json();
+        if (result.success) {
+            htmx.ajax('GET', '{% url "services:list" %}', '#main-content-area');
+        } else if (result.errors) {
+            let msg = [];
+            for (const [field, errs] of Object.entries(result.errors)) {
+                msg.push(field + ': ' + errs.join(', '));
+            }
+            alert(msg.join('\n'));
+        }
+    } catch (error) {
+        alert('{% trans "Error saving service" %}');
+    }
+});
+</script>

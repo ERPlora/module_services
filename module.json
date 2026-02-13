@@ -1,0 +1,29 @@
+{
+    "id": "services",
+    "name": "Services",
+    "version": "2.0.0",
+    "description": "Service catalog management for salons, spas and service businesses",
+    "author": "ERPlora",
+    "category": "services",
+    "icon": "briefcase",
+    "color": "tertiary",
+    "menu": {
+        "label": "Services",
+        "icon": "briefcase-outline",
+        "order": 30
+    },
+    "navigation": [
+        {"id": "dashboard", "label": "Overview", "icon": "grid-outline"},
+        {"id": "services", "label": "Services", "icon": "briefcase-outline"},
+        {"id": "categories", "label": "Categories", "icon": "folder-outline"},
+        {"id": "packages", "label": "Packages", "icon": "gift-outline"},
+        {"id": "settings", "label": "Settings", "icon": "settings-outline"}
+    ],
+    "permissions": [
+        "services.view_service", "services.add_service",
+        "services.change_service", "services.delete_service",
+        "services.view_servicecategory", "services.change_servicecategory",
+        "services.view_servicepackage", "services.change_servicepackage",
+        "services.view_servicessettings", "services.change_servicessettings"
+    ]
+}

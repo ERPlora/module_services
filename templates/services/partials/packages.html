@@ -1,0 +1,80 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <div class="flex justify-end mb-4">
+        <button class="btn color-primary"
+            onclick="addPackage()">
+            {% icon "add-outline" css_class="mr-2" %}
+            {% trans "New Package" %}
+        </button>
+    </div>
+
+    <!-- Packages List -->
+    {% if packages %}
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="list">
+                {% for package in packages %}
+                <a hx-get="{% url 'services:package_detail' package.pk %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
+                            {% icon "gift-outline" css_class="text-xl text-warning" %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ package.name }}</div>
+                        <div class="list-item-note">
+                            {% if package.description %}{{ package.description|truncatewords:10 }}{% endif %}
+                            {% if package.validity_days %} &middot; {{ package.validity_days }} {% trans "days" %}{% endif %}
+                        </div>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="font-semibold mr-2">{{ package.final_price }} &euro;</span>
+                        {% if not package.is_active %}
+                            <span class="badge ">{% trans "Inactive" %}</span>
+                        {% elif package.is_featured %}
+                            <span class="badge color-warning">{% trans "Featured" %}</span>
+                        {% endif %}
+                        {% icon "chevron-forward-outline" css_class="text-muted" %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-muted">
+        {% icon "gift-outline" css_class="text-5xl block mx-auto mb-2" %}
+        <p class="mt-2">{% trans "No packages yet" %}</p>
+        <p class="text-xs mb-3">{% trans "Create packages to bundle services together" %}</p>
+        <button class="btn btn-sm color-primary"
+            onclick="addPackage()">
+            {% trans "Create your first package" %}
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function addPackage() {
+    const name = prompt('{% trans "Package name:" %}');
+    if (!name) return;
+    fetch('{% url "services:package_add" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'name=' + encodeURIComponent(name),
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            htmx.ajax('GET', '{% url "services:package_list" %}', '#main-content-area');
+        } else if (data.errors) {
+            alert(JSON.stringify(data.errors));
+        }
+    });
+}
+</script>

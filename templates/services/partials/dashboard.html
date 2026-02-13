@@ -1,0 +1,203 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    {% icon "briefcase-outline" css_class="text-xl text-primary" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.total }}</div>
+                    <div class="text-xs text-muted">{% trans "Total Services" %}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+                    {% icon "checkmark-circle-outline" css_class="text-xl text-success" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-success">{{ stats.active }}</div>
+                    <div class="text-xs text-muted">{% trans "Active" %}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                    {% icon "calendar-outline" css_class="text-xl text-warning" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.bookable }}</div>
+                    <div class="text-xs text-muted">{% trans "Bookable" %}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
+                    {% icon "folder-outline" css_class="text-xl text-secondary" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.categories }}</div>
+                    <div class="text-xs text-muted">{% trans "Categories" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Stats -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    {% icon "gift-outline" css_class="text-xl text-primary" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.packages }}</div>
+                    <div class="text-xs text-muted">{% trans "Packages" %}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+                    {% icon "cash-outline" css_class="text-xl text-success" %}
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ stats.avg_price|floatformat:2 }} &euro;</div>
+                    <div class="text-xs text-muted">{% trans "Avg. Price" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Services -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <h3 class="card-title">{% trans "Recent Services" %}</h3>
+                <button type="button" class="btn btn-sm btn-ghost"
+                    hx-get="{% url 'services:list' %}"
+                    hx-target="#main-content-area"
+                    hx-push-url="true">
+                    {% trans "View All" %}
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_services %}
+            <div class="list">
+                {% for service in recent_services %}
+                <a hx-get="{% url 'services:detail' service.pk %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                            {% if service.icon %}{% icon service.icon css_class="text-xl text-primary" %}{% else %}{% icon "briefcase-outline" css_class="text-xl text-primary" %}{% endif %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ service.name }}</div>
+                        <div class="list-item-note">{{ service.duration_minutes }} {% trans "min" %} &middot; {{ service.price }} &euro;{% if service.category %} &middot; {{ service.category.name }}{% endif %}</div>
+                    </div>
+                    <div class="list-item-end">
+                        {% if service.is_bookable %}<span class="badge color-success">{% trans "Bookable" %}</span>{% endif %}
+                        {% icon "chevron-forward-outline" css_class="text-muted" %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-muted">
+                {% icon "briefcase-outline" css_class="text-5xl block mx-auto mb-2" %}
+                <p class="mt-2">{% trans "No services yet" %}</p>
+                <button class="btn btn-sm color-primary mt-3"
+                    hx-get="{% url 'services:create' %}"
+                    hx-target="#main-content-area"
+                    hx-push-url="true">
+                    {% trans "Create your first service" %}
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Featured Services -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "star" css_class="text-warning" %} {% trans "Featured Services" %}</h3>
+        </div>
+        <div class="card-body p-0">
+            {% if featured_services %}
+            <div class="list">
+                {% for service in featured_services %}
+                <a hx-get="{% url 'services:detail' service.pk %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
+                            {% icon "star" css_class="text-xl text-warning" %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ service.name }}</div>
+                        <div class="list-item-note">{{ service.category.name|default:_("Uncategorized") }}</div>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="font-semibold">{{ service.price }} &euro;</span>
+                        {% icon "chevron-forward-outline" css_class="text-muted" %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-muted">
+                {% icon "star-outline" css_class="text-4xl block mx-auto mb-2" %}
+                <p class="mt-2 text-sm">{% trans "No featured services" %}</p>
+                <p class="text-xs">{% trans "Mark services as featured to highlight them here" %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{% trans "Quick Actions" %}</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="list">
+                <a hx-get="{% url 'services:create' %}" hx-target="#main-content-area" hx-push-url="true" class="list-item list-item-clickable">
+                    <div class="list-item-start">{% icon "add-circle-outline" css_class="text-xl text-primary" %}</div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Add New Service" %}</div>
+                        <div class="list-item-note">{% trans "Create a new service entry" %}</div>
+                    </div>
+                    <div class="list-item-end">{% icon "chevron-forward-outline" css_class="text-muted" %}</div>
+                </a>
+                <a hx-get="{% url 'services:categories' %}" hx-target="#main-content-area" hx-push-url="true" class="list-item list-item-clickable">
+                    <div class="list-item-start">{% icon "folder-outline" css_class="text-xl text-secondary" %}</div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Manage Categories" %}</div>
+                        <div class="list-item-note">{% trans "Organize services into categories" %}</div>
+                    </div>
+                    <div class="list-item-end">{% icon "chevron-forward-outline" css_class="text-muted" %}</div>
+                </a>
+                <a hx-get="{% url 'services:package_list' %}" hx-target="#main-content-area" hx-push-url="true" class="list-item list-item-clickable">
+                    <div class="list-item-start">{% icon "gift-outline" css_class="text-xl text-warning" %}</div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{% trans "Service Packages" %}</div>
+                        <div class="list-item-note">{% trans "Bundle services at a discount" %}</div>
+                    </div>
+                    <div class="list-item-end">{% icon "chevron-forward-outline" css_class="text-muted" %}</div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

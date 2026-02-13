@@ -1,0 +1,83 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <div class="flex justify-end mb-4">
+        <button class="btn color-primary"
+            onclick="addCategory()">
+            {% icon "add-outline" css_class="mr-2" %}
+            {% trans "New Category" %}
+        </button>
+    </div>
+
+    <!-- Categories List -->
+    <div id="categories-list">
+        {% if categories %}
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="list">
+                    {% for category in categories %}
+                    <a hx-get="{% url 'services:category_detail' category.pk %}"
+                       hx-target="#main-content-area"
+                       hx-push-url="true"
+                       class="list-item list-item-clickable">
+                        <div class="list-item-start">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: {% if category.color %}{{ category.color }}20{% else %}rgba(var(--color-primary-rgb, 56, 128, 255), 0.1){% endif %}">
+                                {% if category.icon %}
+                                    {% icon category.icon css_class="text-xl" %}
+                                {% else %}
+                                    {% icon "folder-outline" css_class="text-xl text-primary" %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="list-item-content">
+                            <div class="list-item-label">{{ category.name }}</div>
+                            <div class="list-item-note">
+                                {% if category.parent %}{{ category.parent.name }} &middot; {% endif %}
+                                {{ category.service_count }} {% trans "services" %}
+                            </div>
+                        </div>
+                        <div class="list-item-end">
+                            {% if not category.is_active %}
+                                <span class="badge ">{% trans "Inactive" %}</span>
+                            {% endif %}
+                            {% icon "chevron-forward-outline" css_class="text-muted" %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-muted">
+            {% icon "folder-outline" css_class="text-5xl block mx-auto mb-2" %}
+            <p class="mt-2">{% trans "No categories yet" %}</p>
+            <p class="text-xs mb-3">{% trans "Create categories to organize your services" %}</p>
+            <button class="btn btn-sm color-primary"
+                onclick="addCategory()">
+                {% trans "Create your first category" %}
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function addCategory() {
+    const name = prompt('{% trans "Category name:" %}');
+    if (!name) return;
+    fetch('{% url "services:category_add" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'name=' + encodeURIComponent(name),
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            htmx.ajax('GET', '{% url "services:categories" %}', '#main-content-area');
+        } else if (data.errors) {
+            alert(JSON.stringify(data.errors));
+        }
+    });
+}
+</script>

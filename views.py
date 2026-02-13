@@ -1,26 +1,40 @@
-"""
-Views for the services module.
-Handles all HTTP requests for services, categories, variants, addons, and packages.
-"""
+"""Services views."""
+
 import json
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST, require_GET
-from django.db.models import Q
 from decimal import Decimal
 
+from django.db.models import Q, Count, Avg
+from django.http import JsonResponse
+from django.utils import timezone
+from django.utils.text import slugify
+from django.views.decorators.http import require_POST, require_GET
+
 from apps.accounts.decorators import login_required
-from apps.modules_runtime.decorators import module_view
+from apps.core.htmx import htmx_view
+from apps.modules_runtime.navigation import with_module_nav
 
 from .models import (
-    ServicesConfig,
+    ServicesSettings,
     ServiceCategory,
     Service,
     ServiceVariant,
     ServiceAddon,
     ServicePackage,
+    ServicePackageItem,
 )
-from .services import ServiceService
+from .forms import (
+    ServiceForm,
+    ServiceCategoryForm,
+    ServiceVariantForm,
+    ServiceAddonForm,
+    ServicePackageForm,
+    ServiceFilterForm,
+    ServicesSettingsForm,
+)
+
+
+def _hub(request):
+    return request.session.get('hub_id')
 
 
 # =============================================================================
@@ -28,12 +42,32 @@ from .services import ServiceService
 # =============================================================================
 
 @login_required
-@module_view("services", "dashboard")
+@with_module_nav('services', 'dashboard')
+@htmx_view('services/pages/dashboard.html', 'services/partials/dashboard.html')
+def index(request):
+    """Redirect to dashboard."""
+    return dashboard(request)
+
+
+@login_required
+@with_module_nav('services', 'dashboard')
+@htmx_view('services/pages/dashboard.html', 'services/partials/dashboard.html')
 def dashboard(request):
-    """Services dashboard with statistics and overview."""
-    stats = ServiceService.get_service_stats()
-    recent_services = Service.objects.filter(is_active=True).order_by('-created_at')[:5]
-    featured_services = ServiceService.get_featured_services(limit=5)
+    """Services dashboard with statistics."""
+    hub = _hub(request)
+    services = Service.objects.filter(hub_id=hub, is_deleted=False)
+
+    stats = {
+        'total': services.count(),
+        'active': services.filter(is_active=True).count(),
+        'bookable': services.filter(is_bookable=True, is_active=True).count(),
+        'categories': ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, is_active=True).count(),
+        'packages': ServicePackage.objects.filter(hub_id=hub, is_deleted=False, is_active=True).count(),
+        'avg_price': services.filter(is_active=True, price__gt=0).aggregate(avg=Avg('price'))['avg'] or 0,
+    }
+
+    recent_services = services.order_by('-created_at')[:5]
+    featured_services = services.filter(is_featured=True, is_active=True)[:5]
 
     return {
         'stats': stats,
@@ -47,207 +81,135 @@ def dashboard(request):
 # =============================================================================
 
 @login_required
-@module_view("services", "list")
+@with_module_nav('services', 'services')
+@htmx_view('services/pages/list.html', 'services/partials/list.html')
 def service_list(request):
-    """List all services with search and filters."""
-    search = request.GET.get('search', '')
+    """List services with search and filters."""
+    hub = _hub(request)
+    services = Service.objects.filter(hub_id=hub, is_deleted=False).select_related('category')
+
+    q = request.GET.get('q', '')
     category_id = request.GET.get('category')
-    status = request.GET.get('status', 'active')
+    pricing_type = request.GET.get('pricing_type')
+    is_active = request.GET.get('is_active')
 
-    is_active = None
-    if status == 'active':
-        is_active = True
-    elif status == 'inactive':
-        is_active = False
+    if q:
+        services = services.filter(
+            Q(name__icontains=q) | Q(sku__icontains=q) | Q(description__icontains=q)
+        )
+    if category_id:
+        services = services.filter(category_id=category_id)
+    if pricing_type:
+        services = services.filter(pricing_type=pricing_type)
+    if is_active == 'true':
+        services = services.filter(is_active=True)
+    elif is_active == 'false':
+        services = services.filter(is_active=False)
 
-    services = ServiceService.search_services(
-        query=search,
-        category_id=int(category_id) if category_id else None,
-        is_active=is_active,
-    )
+    services = services.order_by('sort_order', 'name')
+    categories = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, is_active=True).order_by('sort_order', 'name')
 
-    categories = ServiceCategory.objects.filter(is_active=True).order_by('order', 'name')
+    filter_form = ServiceFilterForm(request.GET)
+    filter_form.fields['category'].queryset = categories
 
     return {
         'services': services,
         'categories': categories,
-        'search': search,
-        'selected_category': category_id,
-        'status': status,
+        'filter_form': filter_form,
+        'q': q,
     }
 
 
 @login_required
-def service_create(request):
-    """Create a new service."""
-    if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
-
-            # Convert numeric fields
-            price = Decimal(data.get('price', '0'))
-            duration = int(data.get('duration_minutes', 60))
-            category_id = data.get('category_id') or data.get('category')
-            if category_id:
-                category_id = int(category_id)
-            else:
-                category_id = None
-
-            service, error = ServiceService.create_service(
-                name=data.get('name', ''),
-                price=price,
-                duration_minutes=duration,
-                category_id=category_id,
-                description=data.get('description', ''),
-                short_description=data.get('short_description', ''),
-                pricing_type=data.get('pricing_type', 'fixed'),
-                cost=Decimal(data.get('cost', '0')),
-                tax_rate=Decimal(data.get('tax_rate')) if data.get('tax_rate') else None,
-                buffer_before=int(data.get('buffer_before', 0)),
-                buffer_after=int(data.get('buffer_after', 0)),
-                max_capacity=int(data.get('max_capacity', 1)),
-                is_bookable=data.get('is_bookable', 'true') in ['true', True, '1', 1],
-                requires_confirmation=data.get('requires_confirmation', 'false') in ['true', True, '1', 1],
-                allow_online_booking=data.get('allow_online_booking', 'true') in ['true', True, '1', 1],
-                is_featured=data.get('is_featured', 'false') in ['true', True, '1', 1],
-                sku=data.get('sku'),
-                barcode=data.get('barcode', ''),
-                notes=data.get('notes', ''),
-                icon=data.get('icon', ''),
-                color=data.get('color', ''),
-            )
-
-            if error:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
-            return JsonResponse({'success': True, 'id': service.id, 'slug': service.slug})
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    # GET - show form
-    categories = ServiceCategory.objects.filter(is_active=True).order_by('order', 'name')
-    config = ServicesConfig.get_config()
-
-    return render(request, 'services/service_form.html', {
-        'mode': 'create',
-        'categories': categories,
-        'config': config,
-    })
-
-
-@login_required
+@with_module_nav('services', 'services')
+@htmx_view('services/pages/detail.html', 'services/partials/detail.html')
 def service_detail(request, pk):
-    """Service detail view."""
-    service = get_object_or_404(Service, pk=pk)
-    variants = service.variants.filter(is_active=True).order_by('order')
-    addons = service.addons.filter(is_active=True)
-    packages = service.packages.filter(is_active=True)
+    """Service detail with variants and addons."""
+    hub = _hub(request)
+    service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).select_related('category').first()
+    if not service:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    return render(request, 'services/service_detail.html', {
+    variants = service.variants.filter(is_deleted=False, is_active=True).order_by('sort_order')
+    addons = ServiceAddon.objects.filter(hub_id=hub, is_deleted=False, is_active=True, services=service)
+
+    return {
         'service': service,
         'variants': variants,
         'addons': addons,
-        'packages': packages,
-    })
+    }
 
 
 @login_required
-def service_edit(request, pk):
-    """Edit a service."""
-    service = get_object_or_404(Service, pk=pk)
+@with_module_nav('services', 'services')
+@htmx_view('services/pages/form.html', 'services/partials/form.html')
+def service_create(request):
+    """Create a service."""
+    hub = _hub(request)
 
     if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
+        form = ServiceForm(request.POST, request.FILES)
+        if form.is_valid():
+            service = form.save(commit=False)
+            service.hub_id = hub
+            if not service.slug:
+                service.slug = slugify(service.name)
+            service.save()
+            return JsonResponse({'success': True, 'id': str(service.pk), 'name': service.name})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-            # Build update kwargs
-            kwargs = {}
+    form = ServiceForm()
+    form.fields['category'].queryset = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, is_active=True)
+    settings = ServicesSettings.get_settings(hub)
 
-            if 'name' in data:
-                kwargs['name'] = data['name']
-            if 'description' in data:
-                kwargs['description'] = data['description']
-            if 'short_description' in data:
-                kwargs['short_description'] = data['short_description']
-            if 'price' in data:
-                kwargs['price'] = Decimal(data['price'])
-            if 'duration_minutes' in data:
-                kwargs['duration_minutes'] = int(data['duration_minutes'])
-            if 'category_id' in data or 'category' in data:
-                cat_id = data.get('category_id') or data.get('category')
-                kwargs['category_id'] = int(cat_id) if cat_id else None
-            if 'pricing_type' in data:
-                kwargs['pricing_type'] = data['pricing_type']
-            if 'cost' in data:
-                kwargs['cost'] = Decimal(data['cost'])
-            if 'tax_rate' in data:
-                kwargs['tax_rate'] = Decimal(data['tax_rate']) if data['tax_rate'] else None
-            if 'buffer_before' in data:
-                kwargs['buffer_before'] = int(data['buffer_before'])
-            if 'buffer_after' in data:
-                kwargs['buffer_after'] = int(data['buffer_after'])
-            if 'max_capacity' in data:
-                kwargs['max_capacity'] = int(data['max_capacity'])
-            if 'is_bookable' in data:
-                kwargs['is_bookable'] = data['is_bookable'] in ['true', True, '1', 1]
-            if 'requires_confirmation' in data:
-                kwargs['requires_confirmation'] = data['requires_confirmation'] in ['true', True, '1', 1]
-            if 'allow_online_booking' in data:
-                kwargs['allow_online_booking'] = data['allow_online_booking'] in ['true', True, '1', 1]
-            if 'is_featured' in data:
-                kwargs['is_featured'] = data['is_featured'] in ['true', True, '1', 1]
-            if 'is_active' in data:
-                kwargs['is_active'] = data['is_active'] in ['true', True, '1', 1]
-            if 'sku' in data:
-                kwargs['sku'] = data['sku'] if data['sku'] else None
-            if 'barcode' in data:
-                kwargs['barcode'] = data['barcode']
-            if 'notes' in data:
-                kwargs['notes'] = data['notes']
-            if 'icon' in data:
-                kwargs['icon'] = data['icon']
-            if 'color' in data:
-                kwargs['color'] = data['color']
+    return {
+        'form': form,
+        'mode': 'create',
+        'settings': settings,
+    }
 
-            success, error = ServiceService.update_service(service, **kwargs)
 
-            if not success:
-                return JsonResponse({'success': False, 'error': error}, status=400)
+@login_required
+@with_module_nav('services', 'services')
+@htmx_view('services/pages/form.html', 'services/partials/form.html')
+def service_edit(request, pk):
+    """Edit a service."""
+    hub = _hub(request)
+    service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not service:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
+    if request.method == 'POST':
+        form = ServiceForm(request.POST, request.FILES, instance=service)
+        if form.is_valid():
+            service = form.save(commit=False)
+            service.updated_at = timezone.now()
+            service.save()
             return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    form = ServiceForm(instance=service)
+    form.fields['category'].queryset = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, is_active=True)
 
-    # GET - show form
-    categories = ServiceCategory.objects.filter(is_active=True).order_by('order', 'name')
-    config = ServicesConfig.get_config()
-
-    return render(request, 'services/service_form.html', {
-        'mode': 'edit',
+    return {
+        'form': form,
         'service': service,
-        'categories': categories,
-        'config': config,
-    })
+        'mode': 'edit',
+    }
 
 
 @login_required
 @require_POST
 def service_delete(request, pk):
-    """Delete a service."""
-    service = get_object_or_404(Service, pk=pk)
-    success, error = ServiceService.delete_service(service)
+    """Soft delete a service."""
+    hub = _hub(request)
+    service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not service:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    if not success:
-        return JsonResponse({'success': False, 'error': error}, status=400)
-
+    service.is_deleted = True
+    service.deleted_at = timezone.now()
+    service.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
 
 
@@ -255,35 +217,48 @@ def service_delete(request, pk):
 @require_POST
 def service_toggle(request, pk):
     """Toggle service active status."""
-    service = get_object_or_404(Service, pk=pk)
-    is_active = ServiceService.toggle_service_active(service)
+    hub = _hub(request)
+    service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not service:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    return JsonResponse({'success': True, 'is_active': is_active})
+    service.is_active = not service.is_active
+    service.save(update_fields=['is_active', 'updated_at'])
+    return JsonResponse({'success': True, 'is_active': service.is_active})
 
 
 @login_required
 @require_POST
 def service_duplicate(request, pk):
-    """Duplicate a service."""
-    service = get_object_or_404(Service, pk=pk)
+    """Duplicate a service with its variants."""
+    hub = _hub(request)
+    service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not service:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     try:
         data = json.loads(request.body) if request.body else {}
     except json.JSONDecodeError:
         data = {}
 
-    new_name = data.get('name')
-    new_service, error = ServiceService.duplicate_service(service, new_name)
+    new_name = data.get('name', f'{service.name} (copy)')
+    new_slug = slugify(new_name)
 
-    if error:
-        return JsonResponse({'success': False, 'error': error}, status=400)
+    # Copy service
+    variants = list(service.variants.filter(is_deleted=False))
+    service.pk = None
+    service.name = new_name
+    service.slug = new_slug
+    service.is_featured = False
+    service.save()
 
-    return JsonResponse({
-        'success': True,
-        'id': new_service.id,
-        'slug': new_service.slug,
-        'name': new_service.name,
-    })
+    # Copy variants
+    for variant in variants:
+        variant.pk = None
+        variant.service = service
+        variant.save()
+
+    return JsonResponse({'success': True, 'id': str(service.pk), 'name': service.name})
 
 
 # =============================================================================
@@ -291,164 +266,100 @@ def service_duplicate(request, pk):
 # =============================================================================
 
 @login_required
-@module_view("services", "categories")
+@with_module_nav('services', 'categories')
+@htmx_view('services/pages/categories.html', 'services/partials/categories.html')
 def category_list(request):
-    """List all categories."""
-    search = request.GET.get('search', '')
+    """List categories."""
+    hub = _hub(request)
+    categories = ServiceCategory.objects.filter(
+        hub_id=hub, is_deleted=False
+    ).annotate(
+        service_count=Count('services', filter=Q(services__is_deleted=False))
+    ).order_by('sort_order', 'name')
 
-    categories = ServiceCategory.objects.all().order_by('order', 'name')
+    return {'categories': categories}
 
-    if search:
-        categories = categories.filter(
-            Q(name__icontains=search) |
-            Q(description__icontains=search)
-        )
 
-    category_tree = ServiceService.get_category_tree()
+@login_required
+@with_module_nav('services', 'categories')
+@htmx_view('services/pages/category_detail.html', 'services/partials/category_detail.html')
+def category_detail(request, pk):
+    """Category detail with services."""
+    hub = _hub(request)
+    category = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not category:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    services = Service.objects.filter(hub_id=hub, is_deleted=False, category=category).order_by('sort_order', 'name')
+    children = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, parent=category).order_by('sort_order', 'name')
 
     return {
-        'categories': categories,
-        'category_tree': category_tree,
-        'search': search,
+        'category': category,
+        'services': services,
+        'children': children,
     }
 
 
 @login_required
-def category_create(request):
-    """Create a new category."""
+def category_add(request):
+    """Add a category."""
+    hub = _hub(request)
+
     if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
+        form = ServiceCategoryForm(request.POST, request.FILES)
+        if form.is_valid():
+            category = form.save(commit=False)
+            category.hub_id = hub
+            if not category.slug:
+                category.slug = slugify(category.name)
+            category.save()
+            return JsonResponse({'success': True, 'id': str(category.pk), 'name': category.name})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-            parent_id = data.get('parent_id') or data.get('parent')
-            if parent_id:
-                parent_id = int(parent_id)
-            else:
-                parent_id = None
-
-            category, error = ServiceService.create_category(
-                name=data.get('name', ''),
-                parent_id=parent_id,
-                description=data.get('description', ''),
-                icon=data.get('icon', ''),
-                color=data.get('color', ''),
-                order=int(data.get('order', 0)),
-            )
-
-            if error:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
-            return JsonResponse({
-                'success': True,
-                'id': category.id,
-                'slug': category.slug,
-            })
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    # GET - show form
-    parent_categories = ServiceCategory.objects.filter(
-        is_active=True,
-        parent__isnull=True
-    ).order_by('order', 'name')
-
-    return render(request, 'services/category_form.html', {
-        'mode': 'create',
-        'parent_categories': parent_categories,
-    })
-
-
-@login_required
-def category_detail(request, pk):
-    """Category detail view."""
-    category = get_object_or_404(ServiceCategory, pk=pk)
-    services = category.services.filter(is_active=True).order_by('order', 'name')
-    children = category.children.filter(is_active=True).order_by('order', 'name')
-
-    return render(request, 'services/category_detail.html', {
-        'category': category,
-        'services': services,
-        'children': children,
-    })
+    form = ServiceCategoryForm()
+    form.fields['parent'].queryset = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, is_active=True)
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 def category_edit(request, pk):
     """Edit a category."""
-    category = get_object_or_404(ServiceCategory, pk=pk)
+    hub = _hub(request)
+    category = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not category:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
-
-            kwargs = {}
-
-            if 'name' in data:
-                kwargs['name'] = data['name']
-            if 'description' in data:
-                kwargs['description'] = data['description']
-            if 'parent_id' in data or 'parent' in data:
-                parent_id = data.get('parent_id') or data.get('parent')
-                kwargs['parent_id'] = int(parent_id) if parent_id else None
-            if 'icon' in data:
-                kwargs['icon'] = data['icon']
-            if 'color' in data:
-                kwargs['color'] = data['color']
-            if 'order' in data:
-                kwargs['order'] = int(data['order'])
-            if 'is_active' in data:
-                kwargs['is_active'] = data['is_active'] in ['true', True, '1', 1]
-
-            success, error = ServiceService.update_category(category, **kwargs)
-
-            if not success:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
+        form = ServiceCategoryForm(request.POST, request.FILES, instance=category)
+        if form.is_valid():
+            form.save()
             return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    # GET - show form
-    parent_categories = ServiceCategory.objects.filter(
-        is_active=True
-    ).exclude(
-        pk=pk
-    ).exclude(
-        pk__in=[c.id for c in category.get_descendants()]
-    ).order_by('order', 'name')
-
-    return render(request, 'services/category_form.html', {
-        'mode': 'edit',
-        'category': category,
-        'parent_categories': parent_categories,
-    })
+    form = ServiceCategoryForm(instance=category)
+    form.fields['parent'].queryset = ServiceCategory.objects.filter(
+        hub_id=hub, is_deleted=False, is_active=True
+    ).exclude(pk=pk)
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 @require_POST
 def category_delete(request, pk):
-    """Delete a category."""
-    category = get_object_or_404(ServiceCategory, pk=pk)
+    """Soft delete a category."""
+    hub = _hub(request)
+    category = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not category:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    try:
-        data = json.loads(request.body) if request.body else {}
-    except json.JSONDecodeError:
-        data = {}
+    # Move children to parent
+    ServiceCategory.objects.filter(hub_id=hub, parent=category).update(parent=category.parent)
+    # Unlink services
+    Service.objects.filter(hub_id=hub, category=category).update(category=None)
 
-    move_to_parent = data.get('move_to_parent', True)
-    success, error = ServiceService.delete_category(category, move_to_parent)
-
-    if not success:
-        return JsonResponse({'success': False, 'error': error}, status=400)
-
+    category.is_deleted = True
+    category.deleted_at = timezone.now()
+    category.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
 
 
@@ -457,98 +368,58 @@ def category_delete(request, pk):
 # =============================================================================
 
 @login_required
-def variant_create(request, service_pk):
-    """Create a service variant."""
-    service = get_object_or_404(Service, pk=service_pk)
+def variant_add(request, service_pk):
+    """Add variant to a service."""
+    hub = _hub(request)
+    service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=service_pk).first()
+    if not service:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
+        form = ServiceVariantForm(request.POST)
+        if form.is_valid():
+            variant = form.save(commit=False)
+            variant.hub_id = hub
+            variant.service = service
+            variant.save()
+            return JsonResponse({'success': True, 'id': str(variant.pk), 'name': variant.name})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-            variant, error = ServiceService.create_variant(
-                service=service,
-                name=data.get('name', ''),
-                price_adjustment=Decimal(data.get('price_adjustment', '0')),
-                duration_adjustment=int(data.get('duration_adjustment', 0)),
-                description=data.get('description', ''),
-                order=int(data.get('order', 0)),
-            )
-
-            if error:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
-            return JsonResponse({
-                'success': True,
-                'id': variant.id,
-                'final_price': str(variant.final_price),
-                'final_duration': variant.final_duration,
-            })
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    return render(request, 'services/variant_form.html', {
-        'mode': 'create',
-        'service': service,
-    })
+    form = ServiceVariantForm()
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 def variant_edit(request, pk):
     """Edit a variant."""
-    variant = get_object_or_404(ServiceVariant, pk=pk)
+    hub = _hub(request)
+    variant = ServiceVariant.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not variant:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
-
-            kwargs = {}
-            if 'name' in data:
-                kwargs['name'] = data['name']
-            if 'description' in data:
-                kwargs['description'] = data['description']
-            if 'price_adjustment' in data:
-                kwargs['price_adjustment'] = Decimal(data['price_adjustment'])
-            if 'duration_adjustment' in data:
-                kwargs['duration_adjustment'] = int(data['duration_adjustment'])
-            if 'order' in data:
-                kwargs['order'] = int(data['order'])
-            if 'is_active' in data:
-                kwargs['is_active'] = data['is_active'] in ['true', True, '1', 1]
-
-            success, error = ServiceService.update_variant(variant, **kwargs)
-
-            if not success:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
+        form = ServiceVariantForm(request.POST, instance=variant)
+        if form.is_valid():
+            form.save()
             return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    return render(request, 'services/variant_form.html', {
-        'mode': 'edit',
-        'variant': variant,
-        'service': variant.service,
-    })
+    form = ServiceVariantForm(instance=variant)
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 @require_POST
 def variant_delete(request, pk):
-    """Delete a variant."""
-    variant = get_object_or_404(ServiceVariant, pk=pk)
-    success, error = ServiceService.delete_variant(variant)
+    """Soft delete a variant."""
+    hub = _hub(request)
+    variant = ServiceVariant.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not variant:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    if not success:
-        return JsonResponse({'success': False, 'error': error}, status=400)
-
+    variant.is_deleted = True
+    variant.deleted_at = timezone.now()
+    variant.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
 
 
@@ -557,124 +428,67 @@ def variant_delete(request, pk):
 # =============================================================================
 
 @login_required
+@with_module_nav('services', 'services')
+@htmx_view('services/pages/addons.html', 'services/partials/addons.html')
 def addon_list(request):
-    """List all addons."""
-    search = request.GET.get('search', '')
-
-    addons = ServiceAddon.objects.all().order_by('name')
-
-    if search:
-        addons = addons.filter(
-            Q(name__icontains=search) |
-            Q(description__icontains=search)
-        )
-
-    return render(request, 'services/addon_list.html', {
-        'addons': addons,
-        'search': search,
-    })
+    """List addons."""
+    hub = _hub(request)
+    addons = ServiceAddon.objects.filter(hub_id=hub, is_deleted=False).prefetch_related('services').order_by('name')
+    return {'addons': addons}
 
 
 @login_required
-def addon_create(request):
-    """Create an addon."""
+def addon_add(request):
+    """Add an addon."""
+    hub = _hub(request)
+
     if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
+        form = ServiceAddonForm(request.POST)
+        if form.is_valid():
+            addon = form.save(commit=False)
+            addon.hub_id = hub
+            addon.save()
+            form.save_m2m()
+            return JsonResponse({'success': True, 'id': str(addon.pk), 'name': addon.name})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-            service_ids = data.get('service_ids', [])
-            if isinstance(service_ids, str):
-                service_ids = [int(x) for x in service_ids.split(',') if x]
-
-            addon, error = ServiceService.create_addon(
-                name=data.get('name', ''),
-                price=Decimal(data.get('price', '0')),
-                duration_minutes=int(data.get('duration_minutes', 0)),
-                description=data.get('description', ''),
-                service_ids=service_ids,
-            )
-
-            if error:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
-            return JsonResponse({'success': True, 'id': addon.id})
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    services = Service.objects.filter(is_active=True).order_by('name')
-
-    return render(request, 'services/addon_form.html', {
-        'mode': 'create',
-        'services': services,
-    })
+    form = ServiceAddonForm()
+    form.fields['services'].queryset = Service.objects.filter(hub_id=hub, is_deleted=False, is_active=True)
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 def addon_edit(request, pk):
     """Edit an addon."""
-    addon = get_object_or_404(ServiceAddon, pk=pk)
+    hub = _hub(request)
+    addon = ServiceAddon.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not addon:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
-
-            kwargs = {}
-            if 'name' in data:
-                kwargs['name'] = data['name']
-            if 'description' in data:
-                kwargs['description'] = data['description']
-            if 'price' in data:
-                kwargs['price'] = Decimal(data['price'])
-            if 'duration_minutes' in data:
-                kwargs['duration_minutes'] = int(data['duration_minutes'])
-            if 'is_active' in data:
-                kwargs['is_active'] = data['is_active'] in ['true', True, '1', 1]
-
-            service_ids = data.get('service_ids')
-            if service_ids is not None:
-                if isinstance(service_ids, str):
-                    service_ids = [int(x) for x in service_ids.split(',') if x]
-            else:
-                service_ids = None
-
-            success, error = ServiceService.update_addon(addon, service_ids=service_ids, **kwargs)
-
-            if not success:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
+        form = ServiceAddonForm(request.POST, instance=addon)
+        if form.is_valid():
+            form.save()
             return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    services = Service.objects.filter(is_active=True).order_by('name')
-    selected_services = list(addon.services.values_list('id', flat=True))
-
-    return render(request, 'services/addon_form.html', {
-        'mode': 'edit',
-        'addon': addon,
-        'services': services,
-        'selected_services': selected_services,
-    })
+    form = ServiceAddonForm(instance=addon)
+    form.fields['services'].queryset = Service.objects.filter(hub_id=hub, is_deleted=False, is_active=True)
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 @require_POST
 def addon_delete(request, pk):
-    """Delete an addon."""
-    addon = get_object_or_404(ServiceAddon, pk=pk)
-    success, error = ServiceService.delete_addon(addon)
+    """Soft delete an addon."""
+    hub = _hub(request)
+    addon = ServiceAddon.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not addon:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    if not success:
-        return JsonResponse({'success': False, 'error': error}, status=400)
-
+    addon.is_deleted = True
+    addon.deleted_at = timezone.now()
+    addon.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
 
 
@@ -683,214 +497,87 @@ def addon_delete(request, pk):
 # =============================================================================
 
 @login_required
+@with_module_nav('services', 'packages')
+@htmx_view('services/pages/packages.html', 'services/partials/packages.html')
 def package_list(request):
-    """List all packages."""
-    search = request.GET.get('search', '')
-
-    packages = ServicePackage.objects.all().order_by('order', 'name')
-
-    if search:
-        packages = packages.filter(
-            Q(name__icontains=search) |
-            Q(description__icontains=search)
-        )
-
-    return render(request, 'services/package_list.html', {
-        'packages': packages,
-        'search': search,
-    })
+    """List packages."""
+    hub = _hub(request)
+    packages = ServicePackage.objects.filter(hub_id=hub, is_deleted=False).order_by('sort_order', 'name')
+    return {'packages': packages}
 
 
 @login_required
-def package_create(request):
-    """Create a package."""
-    if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
-
-            service_items = data.get('service_items', [])
-
-            package, error = ServiceService.create_package(
-                name=data.get('name', ''),
-                service_items=service_items,
-                discount_type=data.get('discount_type', 'percentage'),
-                discount_value=Decimal(data.get('discount_value', '0')),
-                fixed_price=Decimal(data['fixed_price']) if data.get('fixed_price') else None,
-                description=data.get('description', ''),
-                validity_days=int(data['validity_days']) if data.get('validity_days') else None,
-                max_uses=int(data['max_uses']) if data.get('max_uses') else None,
-                is_featured=data.get('is_featured', False) in ['true', True, '1', 1],
-                order=int(data.get('order', 0)),
-            )
-
-            if error:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
-            return JsonResponse({
-                'success': True,
-                'id': package.id,
-                'slug': package.slug,
-            })
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    services = Service.objects.filter(is_active=True).order_by('category__name', 'name')
-
-    return render(request, 'services/package_form.html', {
-        'mode': 'create',
-        'services': services,
-    })
-
-
-@login_required
+@with_module_nav('services', 'packages')
+@htmx_view('services/pages/package_detail.html', 'services/partials/package_detail.html')
 def package_detail(request, pk):
-    """Package detail view."""
-    package = get_object_or_404(ServicePackage, pk=pk)
-    items = package.items.all().select_related('service').order_by('order')
+    """Package detail with items."""
+    hub = _hub(request)
+    package = ServicePackage.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not package:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    return render(request, 'services/package_detail.html', {
+    items = ServicePackageItem.objects.filter(
+        package=package, is_deleted=False
+    ).select_related('service').order_by('sort_order')
+
+    return {
         'package': package,
         'items': items,
-    })
+    }
+
+
+@login_required
+def package_add(request):
+    """Add a package."""
+    hub = _hub(request)
+
+    if request.method == 'POST':
+        form = ServicePackageForm(request.POST, request.FILES)
+        if form.is_valid():
+            package = form.save(commit=False)
+            package.hub_id = hub
+            if not package.slug:
+                package.slug = slugify(package.name)
+            package.save()
+            return JsonResponse({'success': True, 'id': str(package.pk), 'name': package.name})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+    form = ServicePackageForm()
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 def package_edit(request, pk):
     """Edit a package."""
-    package = get_object_or_404(ServicePackage, pk=pk)
+    hub = _hub(request)
+    package = ServicePackage.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not package:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
     if request.method == 'POST':
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST.dict()
-
-            kwargs = {}
-            if 'name' in data:
-                kwargs['name'] = data['name']
-            if 'description' in data:
-                kwargs['description'] = data['description']
-            if 'discount_type' in data:
-                kwargs['discount_type'] = data['discount_type']
-            if 'discount_value' in data:
-                kwargs['discount_value'] = Decimal(data['discount_value'])
-            if 'fixed_price' in data:
-                kwargs['fixed_price'] = Decimal(data['fixed_price']) if data['fixed_price'] else None
-            if 'validity_days' in data:
-                kwargs['validity_days'] = int(data['validity_days']) if data['validity_days'] else None
-            if 'max_uses' in data:
-                kwargs['max_uses'] = int(data['max_uses']) if data['max_uses'] else None
-            if 'is_featured' in data:
-                kwargs['is_featured'] = data['is_featured'] in ['true', True, '1', 1]
-            if 'is_active' in data:
-                kwargs['is_active'] = data['is_active'] in ['true', True, '1', 1]
-            if 'order' in data:
-                kwargs['order'] = int(data['order'])
-
-            service_items = data.get('service_items')
-
-            success, error = ServiceService.update_package(package, service_items=service_items, **kwargs)
-
-            if not success:
-                return JsonResponse({'success': False, 'error': error}, status=400)
-
+        form = ServicePackageForm(request.POST, request.FILES, instance=package)
+        if form.is_valid():
+            form.save()
             return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-    services = Service.objects.filter(is_active=True).order_by('category__name', 'name')
-    current_items = list(package.items.values('service_id', 'quantity', 'order'))
-
-    return render(request, 'services/package_form.html', {
-        'mode': 'edit',
-        'package': package,
-        'services': services,
-        'current_items': current_items,
-    })
+    form = ServicePackageForm(instance=package)
+    return JsonResponse({'form': 'render'})
 
 
 @login_required
 @require_POST
 def package_delete(request, pk):
-    """Delete a package."""
-    package = get_object_or_404(ServicePackage, pk=pk)
-    success, error = ServiceService.delete_package(package)
+    """Soft delete a package."""
+    hub = _hub(request)
+    package = ServicePackage.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
+    if not package:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    if not success:
-        return JsonResponse({'success': False, 'error': error}, status=400)
-
+    package.is_deleted = True
+    package.deleted_at = timezone.now()
+    package.save(update_fields=['is_deleted', 'deleted_at', 'updated_at'])
     return JsonResponse({'success': True})
-
-
-# =============================================================================
-# Settings
-# =============================================================================
-
-@login_required
-@module_view("services", "settings")
-def settings_view(request):
-    """Settings page."""
-    config = ServicesConfig.get_config()
-    return {'config': config}
-
-
-@login_required
-@require_POST
-def settings_save(request):
-    """Save settings."""
-    config = ServicesConfig.get_config()
-
-    try:
-        if request.content_type == 'application/json':
-            data = json.loads(request.body)
-        else:
-            data = request.POST.dict()
-
-        if 'default_duration' in data:
-            config.default_duration = int(data['default_duration'])
-        if 'default_buffer_time' in data:
-            config.default_buffer_time = int(data['default_buffer_time'])
-        if 'default_tax_rate' in data:
-            config.default_tax_rate = Decimal(data['default_tax_rate'])
-        if 'currency' in data:
-            config.currency = data['currency']
-        if 'price_decimal_places' in data:
-            config.price_decimal_places = int(data['price_decimal_places'])
-
-        config.save()
-        return JsonResponse({'success': True})
-
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-
-@login_required
-@require_POST
-def settings_toggle(request):
-    """Toggle boolean settings."""
-    config = ServicesConfig.get_config()
-    field = request.POST.get('field')
-
-    toggleable_fields = [
-        'show_prices',
-        'show_duration',
-        'allow_online_booking',
-        'include_tax_in_price',
-    ]
-
-    if field not in toggleable_fields:
-        return JsonResponse({'success': False, 'error': 'Invalid field'}, status=400)
-
-    setattr(config, field, not getattr(config, field))
-    config.save()
-
-    return JsonResponse({'success': True, 'value': getattr(config, field)})
 
 
 # =============================================================================
@@ -901,25 +588,25 @@ def settings_toggle(request):
 @require_GET
 def api_search(request):
     """Search services API."""
-    query = request.GET.get('q', '')
-    limit = int(request.GET.get('limit', 20))
+    hub = _hub(request)
+    q = request.GET.get('q', '')
+    if len(q) < 2:
+        return JsonResponse({'results': []})
 
-    services = ServiceService.search_services(
-        query=query,
-        is_active=True,
-    )[:limit]
+    services = Service.objects.filter(
+        hub_id=hub, is_deleted=False, is_active=True
+    ).filter(
+        Q(name__icontains=q) | Q(sku__icontains=q) | Q(description__icontains=q)
+    ).select_related('category')[:20]
 
-    results = [
-        {
-            'id': s.id,
-            'name': s.name,
-            'price': str(s.price),
-            'duration_minutes': s.duration_minutes,
-            'category': s.category.name if s.category else None,
-            'is_bookable': s.is_bookable,
-        }
-        for s in services
-    ]
+    results = [{
+        'id': str(s.pk),
+        'name': s.name,
+        'price': str(s.price),
+        'duration_minutes': s.duration_minutes,
+        'category': s.category.name if s.category else None,
+        'is_bookable': s.is_bookable,
+    } for s in services]
 
     return JsonResponse({'results': results})
 
@@ -927,35 +614,33 @@ def api_search(request):
 @login_required
 @require_GET
 def api_services_list(request):
-    """List services API."""
-    category_id = request.GET.get('category_id')
-    bookable_only = request.GET.get('bookable', 'false') == 'true'
+    """List services API with filters."""
+    hub = _hub(request)
+    services = Service.objects.filter(hub_id=hub, is_deleted=False, is_active=True)
 
-    if bookable_only:
-        services = ServiceService.get_bookable_services()
-    elif category_id:
-        services = ServiceService.get_services_by_category(int(category_id))
-    else:
-        services = Service.objects.filter(is_active=True).order_by('order', 'name')
+    category_id = request.GET.get('category')
+    if category_id:
+        services = services.filter(category_id=category_id)
+    if request.GET.get('bookable') == 'true':
+        services = services.filter(is_bookable=True)
 
-    results = [
-        {
-            'id': s.id,
-            'name': s.name,
-            'slug': s.slug,
-            'price': str(s.price),
-            'price_display': s.get_price_display(),
-            'duration_minutes': s.duration_minutes,
-            'total_duration': s.total_duration,
-            'category_id': s.category_id,
-            'category_name': s.category.name if s.category else None,
-            'is_bookable': s.is_bookable,
-            'max_capacity': s.max_capacity,
-            'icon': s.icon,
-            'color': s.color,
-        }
-        for s in services
-    ]
+    services = services.select_related('category').order_by('sort_order', 'name')
+
+    results = [{
+        'id': str(s.pk),
+        'name': s.name,
+        'slug': s.slug,
+        'price': str(s.price),
+        'price_display': s.get_price_display(),
+        'duration_minutes': s.duration_minutes,
+        'total_duration': s.total_duration,
+        'category_id': str(s.category_id) if s.category_id else None,
+        'category_name': s.category.name if s.category else None,
+        'is_bookable': s.is_bookable,
+        'max_capacity': s.max_capacity,
+        'icon': s.icon,
+        'color': s.color,
+    } for s in services]
 
     return JsonResponse({'services': results})
 
@@ -963,36 +648,30 @@ def api_services_list(request):
 @login_required
 @require_GET
 def api_service_detail(request, pk):
-    """Service detail API."""
-    try:
-        service = Service.objects.get(pk=pk)
-    except Service.DoesNotExist:
-        return JsonResponse({'error': 'Service not found'}, status=404)
+    """Service detail API with variants and addons."""
+    hub = _hub(request)
+    service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).select_related('category').first()
+    if not service:
+        return JsonResponse({'error': 'Not found'}, status=404)
 
-    variants = [
-        {
-            'id': v.id,
-            'name': v.name,
-            'price_adjustment': str(v.price_adjustment),
-            'duration_adjustment': v.duration_adjustment,
-            'final_price': str(v.final_price),
-            'final_duration': v.final_duration,
-        }
-        for v in service.variants.filter(is_active=True)
-    ]
+    variants = [{
+        'id': str(v.pk),
+        'name': v.name,
+        'price_adjustment': str(v.price_adjustment),
+        'duration_adjustment': v.duration_adjustment,
+        'final_price': str(v.final_price),
+        'final_duration': v.final_duration,
+    } for v in service.variants.filter(is_deleted=False, is_active=True)]
 
-    addons = [
-        {
-            'id': a.id,
-            'name': a.name,
-            'price': str(a.price),
-            'duration_minutes': a.duration_minutes,
-        }
-        for a in service.addons.filter(is_active=True)
-    ]
+    addons = [{
+        'id': str(a.pk),
+        'name': a.name,
+        'price': str(a.price),
+        'duration_minutes': a.duration_minutes,
+    } for a in ServiceAddon.objects.filter(hub_id=hub, is_deleted=False, is_active=True, services=service)]
 
     return JsonResponse({
-        'id': service.id,
+        'id': str(service.pk),
         'name': service.name,
         'slug': service.slug,
         'description': service.description,
@@ -1007,8 +686,123 @@ def api_service_detail(request, pk):
         'max_capacity': service.max_capacity,
         'is_bookable': service.is_bookable,
         'requires_confirmation': service.requires_confirmation,
-        'category_id': service.category_id,
+        'category_id': str(service.category_id) if service.category_id else None,
         'category_name': service.category.name if service.category else None,
         'variants': variants,
         'addons': addons,
     })
+
+
+# =============================================================================
+# Settings
+# =============================================================================
+
+@login_required
+@with_module_nav('services', 'settings')
+@htmx_view('services/pages/settings.html', 'services/partials/settings.html')
+def settings(request):
+    """Settings page."""
+    hub = _hub(request)
+    s = ServicesSettings.get_settings(hub)
+    form = ServicesSettingsForm(instance=s)
+    return {'settings': s, 'form': form}
+
+
+@login_required
+@require_POST
+def settings_save(request):
+    """Save settings from JSON body."""
+    hub = _hub(request)
+    s = ServicesSettings.get_settings(hub)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = request.POST.dict()
+
+    for field in ['default_duration', 'default_buffer_time']:
+        if field in data:
+            setattr(s, field, int(data[field]))
+    for field in ['default_tax_rate']:
+        if field in data:
+            setattr(s, field, Decimal(str(data[field])))
+    if 'currency' in data:
+        s.currency = data['currency'][:3]
+
+    s.save()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def settings_toggle(request):
+    """Toggle boolean setting."""
+    hub = _hub(request)
+    s = ServicesSettings.get_settings(hub)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = request.POST.dict()
+
+    field = data.get('field', '')
+    toggleable = ['show_prices', 'show_duration', 'allow_online_booking', 'include_tax_in_price']
+
+    if field not in toggleable:
+        return JsonResponse({'error': 'Invalid field'}, status=400)
+
+    setattr(s, field, not getattr(s, field))
+    s.save()
+    return JsonResponse({'success': True, 'value': getattr(s, field)})
+
+
+@login_required
+@require_POST
+def settings_input(request):
+    """Update numeric/text setting."""
+    hub = _hub(request)
+    s = ServicesSettings.get_settings(hub)
+
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        data = request.POST.dict()
+
+    field = data.get('field', '')
+    value = data.get('value', '')
+
+    numeric_fields = ['default_duration', 'default_buffer_time']
+    decimal_fields = ['default_tax_rate']
+    text_fields = ['currency']
+
+    if field in numeric_fields:
+        setattr(s, field, int(value))
+    elif field in decimal_fields:
+        setattr(s, field, Decimal(str(value)))
+    elif field in text_fields:
+        setattr(s, field, str(value)[:3] if field == 'currency' else str(value))
+    else:
+        return JsonResponse({'error': 'Invalid field'}, status=400)
+
+    s.save()
+    return JsonResponse({'success': True, 'value': str(getattr(s, field))})
+
+
+@login_required
+@require_POST
+def settings_reset(request):
+    """Reset settings to defaults."""
+    hub = _hub(request)
+    s = ServicesSettings.get_settings(hub)
+
+    s.default_duration = 60
+    s.default_buffer_time = 0
+    s.default_tax_rate = Decimal('21.00')
+    s.show_prices = True
+    s.show_duration = True
+    s.allow_online_booking = True
+    s.include_tax_in_price = True
+    s.currency = 'EUR'
+    s.save()
+
+    return JsonResponse({'success': True})

@@ -1,59 +1,57 @@
-{% load i18n ui %}
+{% load i18n djicons %}
 
 {% if services %}
-{% ui_card %}
-<ion-list>
-    {% for service in services %}
-    <ion-item-sliding>
-        <ion-item href="{% url 'services:detail' service.pk %}" detail>
-            {% if service.icon %}
-            <ion-icon slot="start" name="{{ service.icon }}" {% if service.color %}style="color: {{ service.color }}"{% endif %}></ion-icon>
-            {% else %}
-            <ion-icon slot="start" name="construct-outline" color="primary"></ion-icon>
-            {% endif %}
-            <ion-label>
-                <h2>{{ service.name }}</h2>
-                <p>
-                    {{ service.category.name|default:_("Uncategorized") }}
-                    &bull; {{ service.duration_minutes }} min
-                </p>
-            </ion-label>
-            <ion-note slot="end" class="fw-semibold">{{ service.price }} €</ion-note>
-            {% if not service.is_active %}
-            <ion-badge color="medium" slot="end">{% trans "Inactive" %}</ion-badge>
-            {% elif service.is_featured %}
-            <ion-badge color="warning" slot="end">{% trans "Featured" %}</ion-badge>
-            {% endif %}
-        </ion-item>
-
-        <ion-item-options side="end">
-            <ion-item-option color="primary" href="{% url 'services:edit' service.pk %}">
-                {% icon "create-outline" %}
-            </ion-item-option>
-            <ion-item-option
-                color="warning"
-                hx-post="{% url 'services:toggle' service.pk %}"
-                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                hx-swap="none"
-                hx-on::after-request="location.reload()"
-            >
-                {% icon "{% if service.is_active %}eye-off-outline{% else %}eye-outline{% endif %}" %}
-            </ion-item-option>
-            <ion-item-option
-                color="danger"
-                hx-post="{% url 'services:delete' service.pk %}"
-                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                hx-confirm="{% trans 'Delete this service?' %}"
-                hx-swap="none"
-                hx-on::after-request="location.reload()"
-            >
-                {% icon "trash-outline" %}
-            </ion-item-option>
-        </ion-item-options>
-    </ion-item-sliding>
-    {% endfor %}
-</ion-list>
-{% endui_card %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="list">
+            {% for service in services %}
+            <a hx-get="{% url 'services:detail' service.pk %}"
+               hx-target="#main-content-area"
+               hx-push-url="true"
+               class="list-item list-item-clickable">
+                <div class="list-item-start">
+                    <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                        {% if service.icon %}
+                            {% icon service.icon css_class="text-xl text-primary" %}
+                        {% else %}
+                            {% icon "briefcase-outline" css_class="text-xl text-primary" %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="list-item-content">
+                    <div class="list-item-label">{{ service.name }}</div>
+                    <div class="list-item-note">
+                        {{ service.category.name|default:_("Uncategorized") }}
+                        &middot; {{ service.duration_minutes }} {% trans "min" %}
+                        &middot; {{ service.get_pricing_type_display }}
+                    </div>
+                </div>
+                <div class="list-item-end">
+                    <span class="font-semibold mr-2">{{ service.get_price_display }}</span>
+                    {% if not service.is_active %}
+                        <span class="badge ">{% trans "Inactive" %}</span>
+                    {% elif service.is_featured %}
+                        <span class="badge color-warning">{% trans "Featured" %}</span>
+                    {% elif service.is_bookable %}
+                        <span class="badge color-success">{% trans "Bookable" %}</span>
+                    {% endif %}
+                    {% icon "chevron-forward-outline" css_class="text-muted" %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
 {% else %}
-{% ui_empty_state title=_("No services found") icon="construct-outline" description=_("Create your first service or adjust your filters.") %}
+<div class="text-center py-12 text-muted">
+    {% icon "briefcase-outline" css_class="text-5xl block mx-auto mb-2" %}
+    <p class="mt-2">{% trans "No services found" %}</p>
+    <p class="text-xs mb-3">{% trans "Create your first service or adjust your filters" %}</p>
+    <button class="btn btn-sm color-primary"
+        hx-get="{% url 'services:create' %}"
+        hx-target="#main-content-area"
+        hx-push-url="true">
+        {% trans "Create Service" %}
+    </button>
+</div>
 {% endif %}

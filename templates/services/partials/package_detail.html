@@ -1,0 +1,167 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Back Button -->
+    <button type="button"
+            hx-get="{% url 'services:package_list' %}"
+            hx-target="#main-content-area"
+            hx-push-url="true"
+            class="btn btn-ghost mb-3">
+        {% icon "arrow-back-outline" %}
+        {% trans "Back to Packages" %}
+    </button>
+
+    <!-- Package Header -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center">
+                        {% icon "gift-outline" css_class="text-2xl text-warning" %}
+                    </div>
+                    <div>
+                        <h2 class="card-title">{{ package.name }}</h2>
+                        {% if package.description %}
+                        <p class="text-sm opacity-60">{{ package.description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if not package.is_active %}
+                        <span class="badge ">{% trans "Inactive" %}</span>
+                    {% endif %}
+                    {% if package.is_featured %}
+                        <span class="badge color-warning">{% trans "Featured" %}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Stats row -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-primary">{{ package.final_price }} &euro;</div>
+                    <div class="text-xs text-muted">{% trans "Package Price" %}</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold">{{ package.original_price }} &euro;</div>
+                    <div class="text-xs text-muted">{% trans "Original Price" %}</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-success">{{ package.savings }} &euro;</div>
+                    <div class="text-xs text-muted">{% trans "Savings" %} ({{ package.savings_percentage|floatformat:0 }}%)</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold">{{ package.total_duration }} {% trans "min" %}</div>
+                    <div class="text-xs text-muted">{% trans "Total Duration" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Package Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "information-circle-outline" css_class="text-primary" %} {% trans "Details" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Discount Type" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ package.get_discount_type_display }}</div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Discount Value" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">
+                    {{ package.discount_value }}{% if package.discount_type == 'percentage' %}%{% else %} &euro;{% endif %}
+                </div>
+            </div>
+            {% if package.validity_days %}
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Validity" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ package.validity_days }} {% trans "days" %}</div>
+            </div>
+            {% endif %}
+            {% if package.max_uses %}
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Max Uses" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ package.max_uses }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Included Services -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <h3 class="card-title">{% icon "briefcase-outline" css_class="text-primary" %} {% trans "Included Services" %}</h3>
+                <span class="badge">{{ items|length }}</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if items %}
+            <div class="list">
+                {% for item in items %}
+                <a hx-get="{% url 'services:detail' item.service.pk %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <span class="font-semibold">{{ item.quantity }}x</span>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ item.service.name }}</div>
+                        <div class="list-item-note">{{ item.service.duration_minutes }} {% trans "min" %} &middot; {{ item.service.price }} &euro;</div>
+                    </div>
+                    <div class="list-item-end">
+                        {% icon "chevron-forward-outline" css_class="text-muted" %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card-body">
+                <div class="text-center py-6 text-muted">
+                    {% icon "briefcase-outline" css_class="text-3xl block mx-auto mb-2" %}
+                    <p class="text-sm">{% trans "No services in this package yet" %}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card" style="border-color: var(--color-error)">
+        <div class="card-header">
+            <h3 class="card-title text-error">{% trans "Danger Zone" %}</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">{% trans "Permanently delete this package. This action cannot be undone." %}</p>
+            <button type="button" class="btn btn-outline color-error"
+                    onclick="deletePackage()">
+                {% icon "trash-outline" %} {% trans "Delete Package" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function deletePackage() {
+    if (confirm('{% trans "Delete this package permanently?" %}')) {
+        fetch('{% url "services:package_delete" package.pk %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        }).then(r => r.json()).then(data => {
+            if (data.success) htmx.ajax('GET', '{% url "services:package_list" %}', '#main-content-area');
+        });
+    }
+}
+</script>

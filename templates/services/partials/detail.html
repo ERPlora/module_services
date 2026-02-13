@@ -1,0 +1,299 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Back Button -->
+    <button type="button"
+            hx-get="{% url 'services:list' %}"
+            hx-target="#main-content-area"
+            hx-push-url="true"
+            class="btn btn-ghost mb-3">
+        {% icon "arrow-back-outline" %}
+        {% trans "Back to Services" %}
+    </button>
+
+    <!-- Service Header Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: {% if service.color %}{{ service.color }}20{% else %}var(--color-primary-light, rgba(var(--color-primary-rgb), 0.1)){% endif %}">
+                        {% if service.icon %}
+                            {% icon service.icon css_class="text-2xl" %}
+                        {% else %}
+                            {% icon "briefcase-outline" css_class="text-2xl text-primary" %}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h2 class="card-title">{{ service.name }}</h2>
+                        <p class="text-sm opacity-60">{{ service.category.name|default:_("Uncategorized") }}{% if service.sku %} &middot; {{ service.sku }}{% endif %}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if service.is_featured %}
+                        <span class="badge color-warning">{% trans "Featured" %}</span>
+                    {% endif %}
+                    {% if not service.is_active %}
+                        <span class="badge ">{% trans "Inactive" %}</span>
+                    {% endif %}
+                    {% if service.is_bookable %}
+                        <span class="badge color-success">{% trans "Bookable" %}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if service.description %}
+            <p class="text-muted mb-4">{{ service.description }}</p>
+            {% endif %}
+
+            <!-- Stats row -->
+            <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-primary">{{ service.get_price_display }}</div>
+                    <div class="text-xs text-muted">{% trans "Price" %}</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold">{{ service.duration_minutes }} {% trans "min" %}</div>
+                    <div class="text-xs text-muted">{% trans "Duration" %}</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold">{{ service.max_capacity }}</div>
+                    <div class="text-xs text-muted">{% trans "Capacity" %}</div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn color-primary flex-1"
+                    hx-get="{% url 'services:edit' service.pk %}"
+                    hx-target="#main-content-area"
+                    hx-push-url="true">
+                    {% icon "create-outline" %} {% trans "Edit" %}
+                </button>
+                <button type="button" class="btn btn-outline flex-1"
+                    onclick="duplicateService()">
+                    {% icon "copy-outline" %} {% trans "Duplicate" %}
+                </button>
+                <button type="button" class="btn btn-outline"
+                    onclick="toggleService()">
+                    {% if service.is_active %}{% icon "eye-off-outline" %}{% else %}{% icon "eye-outline" %}{% endif %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "cash-outline" css_class="text-primary" %} {% trans "Pricing Details" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Pricing Type" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.get_pricing_type_display }}</div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Price Display" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.get_price_display }}</div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Price with Tax" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.price_with_tax|floatformat:2 }} &euro;</div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Tax Rate" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.effective_tax_rate }}%</div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Cost" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.cost }} &euro;</div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Profit" %}</div>
+                </div>
+                <div class="list-item-end font-semibold {% if service.profit > 0 %}text-success{% else %}text-error{% endif %}">
+                    {{ service.profit|floatformat:2 }} &euro; ({{ service.profit_margin|floatformat:1 }}%)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Duration & Booking -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "time-outline" css_class="text-warning" %} {% trans "Duration & Booking" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Service Duration" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.duration_minutes }} {% trans "min" %}</div>
+            </div>
+            {% if service.buffer_before %}
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Buffer Before" %}</div>
+                    <div class="list-item-note">{% trans "Preparation time" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.buffer_before }} {% trans "min" %}</div>
+            </div>
+            {% endif %}
+            {% if service.buffer_after %}
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Buffer After" %}</div>
+                    <div class="list-item-note">{% trans "Cleanup time" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.buffer_after }} {% trans "min" %}</div>
+            </div>
+            {% endif %}
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Total Duration" %}</div>
+                </div>
+                <div class="list-item-end font-semibold">{{ service.total_duration }} {% trans "min" %}</div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Online Booking" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <span class="badge color-{% if service.allow_online_booking %}success{% else %}medium{% endif %}">
+                        {% if service.allow_online_booking %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Requires Confirmation" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <span class="badge color-{% if service.requires_confirmation %}warning{% else %}medium{% endif %}">
+                        {% if service.requires_confirmation %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variants -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <h3 class="card-title">{% icon "options-outline" css_class="text-primary" %} {% trans "Variants" %}</h3>
+                <span class="badge">{{ variants|length }}</span>
+            </div>
+        </div>
+        {% if variants %}
+        <div class="list">
+            {% for variant in variants %}
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{{ variant.name }}</div>
+                    {% if variant.description %}
+                    <div class="list-item-note">{{ variant.description }}</div>
+                    {% endif %}
+                </div>
+                <div class="list-item-end text-right">
+                    <div class="font-semibold">{{ variant.final_price }} &euro;</div>
+                    <div class="text-xs text-muted">{{ variant.final_duration }} {% trans "min" %}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-6 text-muted">
+                {% icon "options-outline" css_class="text-3xl block mx-auto mb-2" %}
+                <p class="text-sm">{% trans "No variants defined" %}</p>
+                <p class="text-xs">{% trans "Add variants for different service options" %}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Available Addons -->
+    {% if addons %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <h3 class="card-title">{% icon "add-circle-outline" css_class="text-success" %} {% trans "Available Addons" %}</h3>
+                <span class="badge">{{ addons|length }}</span>
+            </div>
+        </div>
+        <div class="list">
+            {% for addon in addons %}
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{{ addon.name }}</div>
+                    {% if addon.duration_minutes %}
+                    <div class="list-item-note">+{{ addon.duration_minutes }} {% trans "min" %}</div>
+                    {% endif %}
+                </div>
+                <div class="list-item-end font-semibold">+{{ addon.price }} &euro;</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Danger Zone -->
+    <div class="card" style="border-color: var(--color-error)">
+        <div class="card-header">
+            <h3 class="card-title text-error">{% trans "Danger Zone" %}</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">{% trans "Permanently delete this service. This action cannot be undone." %}</p>
+            <button type="button" class="btn btn-outline color-error"
+                    onclick="deleteService()">
+                {% icon "trash-outline" %} {% trans "Delete Service" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function duplicateService() {
+    if (confirm('{% trans "Duplicate this service?" %}')) {
+        fetch('{% url "services:duplicate" service.pk %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        }).then(r => r.json()).then(data => {
+            if (data.success) htmx.ajax('GET', '{% url "services:list" %}', '#main-content-area');
+        });
+    }
+}
+
+function toggleService() {
+    fetch('{% url "services:toggle" service.pk %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+    }).then(r => r.json()).then(data => {
+        if (data.success) htmx.ajax('GET', '{% url "services:detail" service.pk %}', '#main-content-area');
+    });
+}
+
+function deleteService() {
+    if (confirm('{% trans "Delete this service permanently?" %}')) {
+        fetch('{% url "services:delete" service.pk %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        }).then(r => r.json()).then(data => {
+            if (data.success) htmx.ajax('GET', '{% url "services:list" %}', '#main-content-area');
+        });
+    }
+}
+</script>

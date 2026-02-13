@@ -1,0 +1,149 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- Back Button -->
+    <button type="button"
+            hx-get="{% url 'services:categories' %}"
+            hx-target="#main-content-area"
+            hx-push-url="true"
+            class="btn btn-ghost mb-3">
+        {% icon "arrow-back-outline" %}
+        {% trans "Back to Categories" %}
+    </button>
+
+    <!-- Category Header -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: {% if category.color %}{{ category.color }}20{% else %}rgba(var(--color-primary-rgb, 56, 128, 255), 0.1){% endif %}">
+                        {% if category.icon %}
+                            {% icon category.icon css_class="text-2xl" %}
+                        {% else %}
+                            {% icon "folder-outline" css_class="text-2xl text-primary" %}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h2 class="card-title">{{ category.name }}</h2>
+                        <p class="text-sm opacity-60">
+                            {% if category.parent %}{% trans "Parent" %}: {{ category.parent.name }}{% else %}{% trans "Top-level category" %}{% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if not category.is_active %}
+                        <span class="badge ">{% trans "Inactive" %}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% if category.description %}
+        <div class="card-body">
+            <p class="text-muted">{{ category.description }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sub-categories -->
+    {% if children %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <h3 class="card-title">{% icon "folder-outline" css_class="text-primary" %} {% trans "Sub-categories" %}</h3>
+                <span class="badge">{{ children|length }}</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="list">
+                {% for child in children %}
+                <a hx-get="{% url 'services:category_detail' child.pk %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        {% if child.icon %}{% icon child.icon css_class="text-xl text-primary" %}{% else %}{% icon "folder-outline" css_class="text-xl text-primary" %}{% endif %}
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ child.name }}</div>
+                    </div>
+                    <div class="list-item-end">
+                        {% icon "chevron-forward-outline" css_class="text-muted" %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Services in Category -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <h3 class="card-title">{% icon "briefcase-outline" css_class="text-primary" %} {% trans "Services" %}</h3>
+                <span class="badge">{{ services|length }}</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if services %}
+            <div class="list">
+                {% for service in services %}
+                <a hx-get="{% url 'services:detail' service.pk %}"
+                   hx-target="#main-content-area"
+                   hx-push-url="true"
+                   class="list-item list-item-clickable">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                            {% if service.icon %}{% icon service.icon css_class="text-xl text-primary" %}{% else %}{% icon "briefcase-outline" css_class="text-xl text-primary" %}{% endif %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ service.name }}</div>
+                        <div class="list-item-note">{{ service.duration_minutes }} {% trans "min" %}</div>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="font-semibold mr-2">{{ service.price }} &euro;</span>
+                        {% if not service.is_active %}
+                            <span class="badge ">{% trans "Inactive" %}</span>
+                        {% endif %}
+                        {% icon "chevron-forward-outline" css_class="text-muted" %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-muted">
+                {% icon "briefcase-outline" css_class="text-4xl block mx-auto mb-2" %}
+                <p class="text-sm">{% trans "No services in this category" %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card" style="border-color: var(--color-error)">
+        <div class="card-header">
+            <h3 class="card-title text-error">{% trans "Danger Zone" %}</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">{% trans "Delete this category. Services will be moved to the parent category." %}</p>
+            <button type="button" class="btn btn-outline color-error"
+                    onclick="deleteCategory()">
+                {% icon "trash-outline" %} {% trans "Delete Category" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteCategory() {
+    if (confirm('{% trans "Delete this category? Services will be moved to parent." %}')) {
+        fetch('{% url "services:category_delete" category.pk %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        }).then(r => r.json()).then(data => {
+            if (data.success) htmx.ajax('GET', '{% url "services:categories" %}', '#main-content-area');
+        });
+    }
+}
+</script>

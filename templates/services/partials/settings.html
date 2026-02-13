@@ -1,0 +1,215 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <!-- General Settings -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "settings-outline" css_class="text-primary" %} {% trans "General Settings" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Default Duration" %}</div>
+                    <div class="list-item-note">{% trans "Default service duration in minutes" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" name="default_duration"
+                           value="{{ settings.default_duration }}"
+                           class="input input-sm"
+                           style="width: 80px;"
+                           hx-post="{% url 'services:settings_input' %}"
+                           hx-vals='js:{field: "default_duration", value: event.target.value}'
+                           hx-trigger="change"
+                           hx-swap="none"
+                           min="5">
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Buffer Time" %}</div>
+                    <div class="list-item-note">{% trans "Default buffer time between services (minutes)" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" name="default_buffer_time"
+                           value="{{ settings.default_buffer_time }}"
+                           class="input input-sm"
+                           style="width: 80px;"
+                           hx-post="{% url 'services:settings_input' %}"
+                           hx-vals='js:{field: "default_buffer_time", value: event.target.value}'
+                           hx-trigger="change"
+                           hx-swap="none"
+                           min="0">
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Default Tax Rate" %}</div>
+                    <div class="list-item-note">{% trans "Applied to services without custom tax rate" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="number" name="default_tax_rate"
+                           value="{{ settings.default_tax_rate }}"
+                           class="input input-sm"
+                           style="width: 80px;"
+                           step="0.01" min="0" max="100"
+                           hx-post="{% url 'services:settings_input' %}"
+                           hx-vals='js:{field: "default_tax_rate", value: event.target.value}'
+                           hx-trigger="change"
+                           hx-swap="none">
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Currency" %}</div>
+                    <div class="list-item-note">{% trans "3-letter currency code" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <input type="text" name="currency"
+                           value="{{ settings.currency }}"
+                           class="input input-sm"
+                           style="width: 80px;"
+                           maxlength="3"
+                           hx-post="{% url 'services:settings_input' %}"
+                           hx-vals='js:{field: "currency", value: event.target.value}'
+                           hx-trigger="change"
+                           hx-swap="none">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Display Options -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "eye-outline" css_class="text-warning" %} {% trans "Display Options" %}</h3>
+        </div>
+        <div class="list">
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Show Prices" %}</div>
+                    <div class="list-item-note">{% trans "Display prices in the service catalog" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <label class="toggle color-success">
+                        <input type="checkbox" name="show_prices"
+                               {% if settings.show_prices %}checked{% endif %}
+                               hx-post="{% url 'services:settings_toggle' %}"
+                               hx-vals='{"field": "show_prices"}'
+                               hx-headers='{"Content-Type": "application/json"}'
+                               hx-swap="none">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Show Duration" %}</div>
+                    <div class="list-item-note">{% trans "Display duration in the service catalog" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <label class="toggle color-success">
+                        <input type="checkbox" name="show_duration"
+                               {% if settings.show_duration %}checked{% endif %}
+                               hx-post="{% url 'services:settings_toggle' %}"
+                               hx-vals='{"field": "show_duration"}'
+                               hx-headers='{"Content-Type": "application/json"}'
+                               hx-swap="none">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Allow Online Booking" %}</div>
+                    <div class="list-item-note">{% trans "Default setting for new services" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <label class="toggle color-success">
+                        <input type="checkbox" name="allow_online_booking"
+                               {% if settings.allow_online_booking %}checked{% endif %}
+                               hx-post="{% url 'services:settings_toggle' %}"
+                               hx-vals='{"field": "allow_online_booking"}'
+                               hx-headers='{"Content-Type": "application/json"}'
+                               hx-swap="none">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+            <div class="list-item">
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Include Tax in Price" %}</div>
+                    <div class="list-item-note">{% trans "Prices already include tax" %}</div>
+                </div>
+                <div class="list-item-end">
+                    <label class="toggle color-success">
+                        <input type="checkbox" name="include_tax_in_price"
+                               {% if settings.include_tax_in_price %}checked{% endif %}
+                               hx-post="{% url 'services:settings_toggle' %}"
+                               hx-vals='{"field": "include_tax_in_price"}'
+                               hx-headers='{"Content-Type": "application/json"}'
+                               hx-swap="none">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">{% icon "link-outline" %} {% trans "Quick Actions" %}</h3>
+        </div>
+        <div class="list">
+            <a hx-get="{% url 'services:addon_list' %}"
+               hx-target="#main-content-area"
+               hx-push-url="true"
+               class="list-item list-item-clickable">
+                <div class="list-item-start">{% icon "add-circle-outline" css_class="text-primary" %}</div>
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Manage Addons" %}</div>
+                    <div class="list-item-note">{% trans "Configure service add-ons" %}</div>
+                </div>
+                <div class="list-item-end">{% icon "chevron-forward-outline" css_class="text-muted" %}</div>
+            </a>
+            <a hx-get="{% url 'services:package_list' %}"
+               hx-target="#main-content-area"
+               hx-push-url="true"
+               class="list-item list-item-clickable">
+                <div class="list-item-start">{% icon "gift-outline" css_class="text-warning" %}</div>
+                <div class="list-item-content">
+                    <div class="list-item-label">{% trans "Manage Packages" %}</div>
+                    <div class="list-item-note">{% trans "Configure service bundles" %}</div>
+                </div>
+                <div class="list-item-end">{% icon "chevron-forward-outline" css_class="text-muted" %}</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Reset -->
+    <div class="card" style="border-color: var(--color-warning)">
+        <div class="card-header">
+            <h3 class="card-title text-warning">{% trans "Reset Settings" %}</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">{% trans "Restore all settings to their default values." %}</p>
+            <button type="button" class="btn color-warning btn-outline"
+                    onclick="resetSettings()">
+                {% icon "refresh-outline" %} {% trans "Reset to Defaults" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetSettings() {
+    if (confirm('{% trans "Reset all settings to defaults?" %}')) {
+        fetch('{% url "services:settings_reset" %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        }).then(r => {
+            if (r.ok) htmx.ajax('GET', '{% url "services:settings" %}', '#main-content-area');
+        });
+    }
+}
+</script>

@@ -1,0 +1,92 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <div class="flex justify-end mb-4">
+        <button class="btn color-primary"
+            onclick="addAddon()">
+            {% icon "add-outline" css_class="mr-2" %}
+            {% trans "New Addon" %}
+        </button>
+    </div>
+
+    <!-- Addons List -->
+    {% if addons %}
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="list">
+                {% for addon in addons %}
+                <div class="list-item">
+                    <div class="list-item-start">
+                        <div class="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                            {% icon "add-circle-outline" css_class="text-xl text-success" %}
+                        </div>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-label">{{ addon.name }}</div>
+                        <div class="list-item-note">
+                            {% if addon.description %}{{ addon.description|truncatewords:8 }} &middot; {% endif %}
+                            {% if addon.duration_minutes %}+{{ addon.duration_minutes }} {% trans "min" %} &middot; {% endif %}
+                            {{ addon.services.count }} {% trans "services" %}
+                        </div>
+                    </div>
+                    <div class="list-item-end">
+                        <span class="font-semibold mr-3">+{{ addon.price }} &euro;</span>
+                        {% if not addon.is_active %}
+                            <span class="badge  mr-2">{% trans "Inactive" %}</span>
+                        {% endif %}
+                        <button type="button" class="btn btn-sm btn-ghost"
+                                onclick="deleteAddon('{{ addon.pk }}', '{{ addon.name|escapejs }}')">
+                            {% icon "trash-outline" css_class="text-error" %}
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-muted">
+        {% icon "add-circle-outline" css_class="text-5xl block mx-auto mb-2" %}
+        <p class="mt-2">{% trans "No addons yet" %}</p>
+        <p class="text-xs mb-3">{% trans "Create addons that can be attached to services" %}</p>
+        <button class="btn btn-sm color-primary"
+            onclick="addAddon()">
+            {% trans "Create your first addon" %}
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function addAddon() {
+    const name = prompt('{% trans "Addon name:" %}');
+    if (!name) return;
+    const price = prompt('{% trans "Price:" %}', '0.00');
+    if (price === null) return;
+    fetch('{% url "services:addon_add" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'name=' + encodeURIComponent(name) + '&price=' + encodeURIComponent(price),
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            htmx.ajax('GET', '{% url "services:addon_list" %}', '#main-content-area');
+        } else if (data.errors) {
+            alert(JSON.stringify(data.errors));
+        }
+    });
+}
+
+function deleteAddon(pk, name) {
+    if (confirm('{% trans "Delete addon" %} "' + name + '"?')) {
+        fetch('/services/addons/' + pk + '/delete/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        }).then(r => r.json()).then(data => {
+            if (data.success) htmx.ajax('GET', '{% url "services:addon_list" %}', '#main-content-area');
+        });
+    }
+}
+</script>

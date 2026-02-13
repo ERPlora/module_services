@@ -1,0 +1,76 @@
+{% load i18n djicons %}
+
+<div class="p-4">
+    <div class="flex justify-end mb-4">
+        <button class="btn color-primary"
+            hx-get="{% url 'services:create' %}"
+            hx-target="#main-content-area"
+            hx-push-url="true">
+            {% icon "add-outline" css_class="mr-2" %}
+            {% trans "New Service" %}
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="input-group">
+                    <span class="input-group__icon">
+                        {% icon "search-outline" %}
+                    </span>
+                    <input type="text" name="q" value="{{ q }}"
+                        placeholder="{% trans 'Search services...' %}"
+                        class="input"
+                        hx-get="{% url 'services:list' %}"
+                        hx-trigger="keyup changed delay:400ms"
+                        hx-target="#services-list"
+                        hx-include="[name='category'], [name='pricing_type'], [name='is_active']"
+                        hx-push-url="true">
+                </div>
+
+                <select name="category" class="select"
+                    hx-get="{% url 'services:list' %}"
+                    hx-trigger="change"
+                    hx-target="#services-list"
+                    hx-include="[name='q'], [name='pricing_type'], [name='is_active']"
+                    hx-push-url="true">
+                    <option value="">{% trans "All Categories" %}</option>
+                    {% for category in categories %}
+                    <option value="{{ category.pk }}" {% if filter_form.category.value|stringformat:"s" == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="pricing_type" class="select"
+                    hx-get="{% url 'services:list' %}"
+                    hx-trigger="change"
+                    hx-target="#services-list"
+                    hx-include="[name='q'], [name='category'], [name='is_active']"
+                    hx-push-url="true">
+                    <option value="">{% trans "All Pricing" %}</option>
+                    <option value="fixed" {% if filter_form.pricing_type.value == 'fixed' %}selected{% endif %}>{% trans "Fixed Price" %}</option>
+                    <option value="hourly" {% if filter_form.pricing_type.value == 'hourly' %}selected{% endif %}>{% trans "Hourly Rate" %}</option>
+                    <option value="from" {% if filter_form.pricing_type.value == 'from' %}selected{% endif %}>{% trans "Starting From" %}</option>
+                    <option value="variable" {% if filter_form.pricing_type.value == 'variable' %}selected{% endif %}>{% trans "Variable" %}</option>
+                    <option value="free" {% if filter_form.pricing_type.value == 'free' %}selected{% endif %}>{% trans "Free" %}</option>
+                </select>
+
+                <select name="is_active" class="select"
+                    hx-get="{% url 'services:list' %}"
+                    hx-trigger="change"
+                    hx-target="#services-list"
+                    hx-include="[name='q'], [name='category'], [name='pricing_type']"
+                    hx-push-url="true">
+                    <option value="">{% trans "All Status" %}</option>
+                    <option value="true" {% if filter_form.is_active.value == 'true' %}selected{% endif %}>{% trans "Active" %}</option>
+                    <option value="false" {% if filter_form.is_active.value == 'false' %}selected{% endif %}>{% trans "Inactive" %}</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services List -->
+    <div id="services-list">
+        {% include "services/partials/service_list_items.html" %}
+    </div>
+</div>

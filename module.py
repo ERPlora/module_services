@@ -17,3 +17,19 @@ NAVIGATION = [
     {'id': 'packages', 'label': _('Packages'), 'icon': 'gift-outline', 'view': 'packages'},
     {'id': 'settings', 'label': _('Settings'), 'icon': 'settings-outline', 'view': 'settings'},
 ]
+
+PERMISSIONS = [
+    'services.view_service',
+    'services.add_service',
+    'services.change_service',
+    'services.delete_service',
+    'services.view_category',
+    'services.add_category',
+    'services.change_category',
+    'services.delete_category',
+    'services.view_package',
+    'services.add_package',
+    'services.change_package',
+    'services.delete_package',
+    'services.manage_settings',
+]

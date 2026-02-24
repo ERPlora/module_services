@@ -1,0 +1,640 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-24 23:58+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;\n"
+
+msgid "Services"
+msgstr "Servicios"
+
+msgid "Search services..."
+msgstr "Buscar servicios..."
+
+msgid "All types"
+msgstr "Todos los tipos"
+
+msgid "All"
+msgstr "Todos"
+
+msgid "Active"
+msgstr "Activo"
+
+msgid "Inactive"
+msgstr "Inactivo"
+
+msgid "Default service duration in minutes"
+msgstr "Duración predeterminada del servicio en minutos"
+
+msgid "Default buffer time between services"
+msgstr "Tiempo de margen predeterminado entre servicios"
+
+msgid "Display prices in catalog"
+msgstr "Mostrar precios en el catálogo"
+
+msgid "Display duration in catalog"
+msgstr "Mostrar duración en el catálogo"
+
+msgid "Prices include tax"
+msgstr "Los precios incluyen impuestos"
+
+msgid "Services Settings"
+msgstr "Ajustes de servicios"
+
+msgid "Icon name"
+msgstr "Nombre del icono"
+
+msgid "Hex color"
+msgstr "Color hexadecimal"
+
+msgid "Service Category"
+msgstr "Categoría de servicio"
+
+msgid "Service Categories"
+msgstr "Categorías de servicio"
+
+msgid "A category cannot be its own parent."
+msgstr "Una categoría no puede ser su propio padre."
+
+msgid "Circular reference detected."
+msgstr "Referencia circular detectada."
+
+msgid "Fixed Price"
+msgstr "Precio fijo"
+
+msgid "Hourly Rate"
+msgstr "Tarifa por hora"
+
+msgid "Starting From"
+msgstr "A partir de"
+
+msgid "Variable"
+msgstr "Variable"
+
+msgid "Free"
+msgstr "Gratis"
+
+msgid "Internal cost"
+msgstr "Coste interno"
+
+msgid "Preparation time"
+msgstr "Tiempo de preparación"
+
+msgid "Cleanup time"
+msgstr "Tiempo de limpieza"
+
+msgid "Max simultaneous bookings"
+msgstr "Máximo de reservas simultáneas"
+
+msgid "Can be booked through appointments"
+msgstr "Puede ser reservado a través de citas"
+
+msgid "Service"
+msgstr "Servicio"
+
+msgid "Minimum price cannot exceed maximum."
+msgstr "El precio mínimo no puede superar el máximo."
+
+#, python-format
+msgid "From %(price)s"
+msgstr "Desde %(price)s"
+
+#, python-format
+msgid "%(price)s/hour"
+msgstr "%(price)s/hora"
+
+msgid "Added to base price"
+msgstr "Añadido al precio base"
+
+msgid "Added to base duration (min)"
+msgstr "Añadido a la duración base (min)"
+
+msgid "Service Variant"
+msgstr "Variante de servicio"
+
+msgid "Service Variants"
+msgstr "Variantes de servicio"
+
+msgid "Service Addon"
+msgstr "Complemento de servicio"
+
+msgid "Service Addons"
+msgstr "Complementos de servicio"
+
+msgid "Percentage"
+msgstr "Porcentaje"
+
+msgid "Fixed Amount"
+msgstr "Importe fijo"
+
+msgid "Overrides calculated price"
+msgstr "Sobrescribe el precio calculado"
+
+msgid "Days to use after purchase"
+msgstr "Días para usar después de la compra"
+
+msgid "Service Package"
+msgstr "Paquete de servicio"
+
+msgid "Service Packages"
+msgstr "Paquetes de servicio"
+
+msgid "Package Item"
+msgstr "Artículo del paquete"
+
+msgid "Package Items"
+msgstr "Artículos del paquete"
+
+msgid "Overview"
+msgstr "Vista general"
+
+msgid "Categories"
+msgstr "Categorías"
+
+msgid "Packages"
+msgstr "Paquetes"
+
+msgid "Settings"
+msgstr "Ajustes"
+
+msgid "New Addon"
+msgstr "Nuevo complemento"
+
+msgid "min"
+msgstr "min"
+
+msgid "services"
+msgstr "servicios"
+
+msgid "No addons yet"
+msgstr "Sin complementos aún"
+
+msgid "Create addons that can be attached to services"
+msgstr "Crear complementos que se puedan adjuntar a servicios"
+
+msgid "Create your first addon"
+msgstr "Crea tu primer complemento"
+
+msgid "Addon name:"
+msgstr "Nombre del complemento:"
+
+msgid "Price:"
+msgstr "Precio:"
+
+msgid "Delete addon"
+msgstr "Eliminar complemento"
+
+msgid "New Category"
+msgstr "Nueva categoría"
+
+msgid "No categories yet"
+msgstr "Sin categorías aún"
+
+msgid "Create categories to organize your services"
+msgstr "Crear categorías para organizar tus servicios"
+
+msgid "Create your first category"
+msgstr "Crea tu primera categoría"
+
+msgid "Category name:"
+msgstr "Nombre de la categoría:"
+
+msgid "Back to Categories"
+msgstr "Volver a categorías"
+
+msgid "Parent"
+msgstr "Padre"
+
+msgid "Top-level category"
+msgstr "Categoría de nivel superior"
+
+msgid "Sub-categories"
+msgstr "Subcategorías"
+
+msgid "No services in this category"
+msgstr "Sin servicios en esta categoría"
+
+msgid "Danger Zone"
+msgstr "Zona peligrosa"
+
+msgid "Delete this category. Services will be moved to the parent category."
+msgstr ""
+"Eliminar esta categoría. Los servicios se moverán a la categoría padre."
+
+msgid "Delete Category"
+msgstr "Eliminar categoría"
+
+msgid "Delete this category? Services will be moved to parent."
+msgstr ""
+"¿Eliminar esta categoría? Los servicios se moverán a la categoría padre."
+
+msgid "Uncategorized"
+msgstr "Sin categoría"
+
+msgid "Total Services"
+msgstr "Total de servicios"
+
+msgid "Bookable"
+msgstr "Reservable"
+
+msgid "Avg. Price"
+msgstr "Precio medio"
+
+msgid "Recent Services"
+msgstr "Servicios recientes"
+
+msgid "View All"
+msgstr "Ver todo"
+
+msgid "No services yet"
+msgstr "Sin servicios aún"
+
+msgid "Create your first service"
+msgstr "Crea tu primer servicio"
+
+msgid "Featured Services"
+msgstr "Servicios destacados"
+
+msgid "No featured services"
+msgstr "Sin servicios destacados"
+
+msgid "Mark services as featured to highlight them here"
+msgstr "Marca servicios como destacados para resaltarlos aquí"
+
+msgid "Quick Actions"
+msgstr "Acciones rápidas"
+
+msgid "Add New Service"
+msgstr "Añadir nuevo servicio"
+
+msgid "Create a new service entry"
+msgstr "Crear una nueva entrada de servicio"
+
+msgid "Manage Categories"
+msgstr "Gestionar categorías"
+
+msgid "Organize services into categories"
+msgstr "Organizar servicios en categorías"
+
+msgid "Bundle services at a discount"
+msgstr "Combinar servicios con descuento"
+
+msgid "Back to Services"
+msgstr "Volver a servicios"
+
+msgid "Featured"
+msgstr "Destacado"
+
+msgid "Price"
+msgstr "Precio"
+
+msgid "Duration"
+msgstr "Duración"
+
+msgid "Capacity"
+msgstr "Capacidad"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Duplicate"
+msgstr "Duplicar"
+
+msgid "Pricing Details"
+msgstr "Detalles de precios"
+
+msgid "Pricing Type"
+msgstr "Tipo de precio"
+
+msgid "Price Display"
+msgstr "Visualización de precio"
+
+msgid "Price with Tax"
+msgstr "Precio con impuestos"
+
+msgid "Tax Rate"
+msgstr "Tasa impositiva"
+
+msgid "Cost"
+msgstr "Coste"
+
+msgid "Profit"
+msgstr "Beneficio"
+
+msgid "Duration & Booking"
+msgstr "Duración y reserva"
+
+msgid "Service Duration"
+msgstr "Duración del servicio"
+
+msgid "Buffer Before"
+msgstr "Margen antes"
+
+msgid "Buffer After"
+msgstr "Margen después"
+
+msgid "Total Duration"
+msgstr "Duración total"
+
+msgid "Online Booking"
+msgstr "Reserva online"
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "No"
+msgstr "No"
+
+msgid "Requires Confirmation"
+msgstr "Requiere confirmación"
+
+msgid "Variants"
+msgstr "Variantes"
+
+msgid "No variants defined"
+msgstr "Sin variantes definidas"
+
+msgid "Add variants for different service options"
+msgstr "Añadir variantes para diferentes opciones de servicio"
+
+msgid "Available Addons"
+msgstr "Complementos disponibles"
+
+msgid "Permanently delete this service. This action cannot be undone."
+msgstr ""
+"Eliminar permanentemente este servicio. Esta acción no se puede deshacer."
+
+msgid "Delete Service"
+msgstr "Eliminar servicio"
+
+msgid "Duplicate this service?"
+msgstr "¿Duplicar este servicio?"
+
+msgid "Delete this service permanently?"
+msgstr "¿Eliminar este servicio permanentemente?"
+
+msgid "Back to Service"
+msgstr "Volver al servicio"
+
+msgid "Basic Information"
+msgstr "Información básica"
+
+msgid "Name"
+msgstr "Nombre"
+
+msgid "Category"
+msgstr "Categoría"
+
+msgid "Short Description"
+msgstr "Descripción corta"
+
+msgid "Description"
+msgstr "Descripción"
+
+msgid "Pricing"
+msgstr "Precios"
+
+msgid "Min Price"
+msgstr "Precio mínimo"
+
+msgid "Max Price"
+msgstr "Precio máximo"
+
+msgid "Leave empty to use the default tax rate"
+msgstr "Dejar vacío para usar la tasa impositiva predeterminada"
+
+msgid "Duration (minutes)"
+msgstr "Duración (minutos)"
+
+msgid "Buffer Before (min)"
+msgstr "Margen antes (min)"
+
+msgid "Buffer After (min)"
+msgstr "Margen después (min)"
+
+msgid "Max Capacity"
+msgstr "Capacidad máxima"
+
+msgid "Booking Options"
+msgstr "Opciones de reserva"
+
+msgid "Is Bookable"
+msgstr "Es reservable"
+
+msgid "Allow Online Booking"
+msgstr "Permitir reserva online"
+
+msgid "Clients can book this online"
+msgstr "Los clientes pueden reservar esto online"
+
+msgid "Bookings need manual approval"
+msgstr "Las reservas requieren aprobación manual"
+
+msgid "Highlight on the dashboard"
+msgstr "Destacar en el panel"
+
+msgid "Service is visible and available"
+msgstr "El servicio es visible y está disponible"
+
+msgid "Additional Information"
+msgstr "Información adicional"
+
+msgid "SKU"
+msgstr "SKU"
+
+msgid "Barcode"
+msgstr "Código de barras"
+
+msgid "Icon"
+msgstr "Icono"
+
+msgid "e.g. briefcase-outline"
+msgstr "ej. briefcase-outline"
+
+msgid "Color"
+msgstr "Color"
+
+msgid "Sort Order"
+msgstr "Orden"
+
+msgid "Internal Notes"
+msgstr "Notas internas"
+
+msgid "Save Changes"
+msgstr "Guardar cambios"
+
+msgid "Create Service"
+msgstr "Crear servicio"
+
+msgid "Error saving service"
+msgstr "Error al guardar servicio"
+
+msgid "New Service"
+msgstr "Nuevo servicio"
+
+msgid "All Categories"
+msgstr "Todas las categorías"
+
+msgid "All Pricing"
+msgstr "Todos los precios"
+
+msgid "All Status"
+msgstr "Todos los estados"
+
+msgid "Back to Packages"
+msgstr "Volver a paquetes"
+
+msgid "Package Price"
+msgstr "Precio del paquete"
+
+msgid "Original Price"
+msgstr "Precio original"
+
+msgid "Savings"
+msgstr "Ahorro"
+
+msgid "Details"
+msgstr "Detalles"
+
+msgid "Discount Type"
+msgstr "Tipo de descuento"
+
+msgid "Discount Value"
+msgstr "Valor del descuento"
+
+msgid "Validity"
+msgstr "Validez"
+
+msgid "days"
+msgstr "días"
+
+msgid "Max Uses"
+msgstr "Usos máximos"
+
+msgid "Included Services"
+msgstr "Servicios incluidos"
+
+msgid "No services in this package yet"
+msgstr "Sin servicios en este paquete aún"
+
+msgid "Permanently delete this package. This action cannot be undone."
+msgstr ""
+"Eliminar permanentemente este paquete. Esta acción no se puede deshacer."
+
+msgid "Delete Package"
+msgstr "Eliminar paquete"
+
+msgid "Delete this package permanently?"
+msgstr "¿Eliminar este paquete permanentemente?"
+
+msgid "New Package"
+msgstr "Nuevo paquete"
+
+msgid "No packages yet"
+msgstr "Sin paquetes aún"
+
+msgid "Create packages to bundle services together"
+msgstr "Crear paquetes para combinar servicios"
+
+msgid "Create your first package"
+msgstr "Crea tu primer paquete"
+
+msgid "Package name:"
+msgstr "Nombre del paquete:"
+
+msgid "No services found"
+msgstr "No se encontraron servicios"
+
+msgid "Create your first service or adjust your filters"
+msgstr "Crea tu primer servicio o ajusta tus filtros"
+
+msgid "General Settings"
+msgstr "Ajustes generales"
+
+msgid "Default Duration"
+msgstr "Duración predeterminada"
+
+msgid "Buffer Time"
+msgstr "Tiempo de margen"
+
+msgid "Default buffer time between services (minutes)"
+msgstr "Tiempo de margen predeterminado entre servicios (minutos)"
+
+msgid "Default Tax Rate"
+msgstr "Tasa impositiva predeterminada"
+
+msgid "Applied to services without custom tax rate"
+msgstr "Aplicado a servicios sin tasa impositiva personalizada"
+
+msgid "Currency"
+msgstr "Moneda"
+
+msgid "3-letter currency code"
+msgstr "Código de moneda de 3 letras"
+
+msgid "Display Options"
+msgstr "Opciones de visualización"
+
+msgid "Show Prices"
+msgstr "Mostrar precios"
+
+msgid "Display prices in the service catalog"
+msgstr "Mostrar precios en el catálogo de servicios"
+
+msgid "Show Duration"
+msgstr "Mostrar duración"
+
+msgid "Display duration in the service catalog"
+msgstr "Mostrar duración en el catálogo de servicios"
+
+msgid "Default setting for new services"
+msgstr "Ajuste predeterminado para nuevos servicios"
+
+msgid "Include Tax in Price"
+msgstr "Incluir impuesto en el precio"
+
+msgid "Prices already include tax"
+msgstr "Los precios ya incluyen impuestos"
+
+msgid "Manage Addons"
+msgstr "Gestionar complementos"
+
+msgid "Configure service add-ons"
+msgstr "Configurar complementos de servicio"
+
+msgid "Manage Packages"
+msgstr "Gestionar paquetes"
+
+msgid "Configure service bundles"
+msgstr "Configurar paquetes de servicios"
+
+msgid "Reset Settings"
+msgstr "Restablecer ajustes"
+
+msgid "Restore all settings to their default values."
+msgstr "Restaurar todos los ajustes a sus valores predeterminados."
+
+msgid "Reset to Defaults"
+msgstr "Restablecer valores predeterminados"
+
+msgid "Reset all settings to defaults?"
+msgstr "¿Restablecer todos los ajustes a los valores predeterminados?"
+
+msgid "Not found"
+msgstr "No encontrado"
+
+msgid "Invalid field"
+msgstr "Campo inválido"

@@ -7,6 +7,7 @@ from django.db.models import Q, Count, Avg
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST, require_GET
 
 from apps.accounts.decorators import login_required
@@ -128,7 +129,7 @@ def service_detail(request, pk):
     hub = _hub(request)
     service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).select_related('category').first()
     if not service:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     variants = service.variants.filter(is_deleted=False, is_active=True).order_by('sort_order')
     addons = ServiceAddon.objects.filter(hub_id=hub, is_deleted=False, is_active=True, services=service)
@@ -177,7 +178,7 @@ def service_edit(request, pk):
     hub = _hub(request)
     service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not service:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if request.method == 'POST':
         form = ServiceForm(request.POST, request.FILES, instance=service)
@@ -205,7 +206,7 @@ def service_delete(request, pk):
     hub = _hub(request)
     service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not service:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     service.is_deleted = True
     service.deleted_at = timezone.now()
@@ -220,7 +221,7 @@ def service_toggle(request, pk):
     hub = _hub(request)
     service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not service:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     service.is_active = not service.is_active
     service.save(update_fields=['is_active', 'updated_at'])
@@ -234,7 +235,7 @@ def service_duplicate(request, pk):
     hub = _hub(request)
     service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not service:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     try:
         data = json.loads(request.body) if request.body else {}
@@ -288,7 +289,7 @@ def category_detail(request, pk):
     hub = _hub(request)
     category = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not category:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     services = Service.objects.filter(hub_id=hub, is_deleted=False, category=category).order_by('sort_order', 'name')
     children = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, parent=category).order_by('sort_order', 'name')
@@ -327,7 +328,7 @@ def category_edit(request, pk):
     hub = _hub(request)
     category = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not category:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if request.method == 'POST':
         form = ServiceCategoryForm(request.POST, request.FILES, instance=category)
@@ -350,7 +351,7 @@ def category_delete(request, pk):
     hub = _hub(request)
     category = ServiceCategory.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not category:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     # Move children to parent
     ServiceCategory.objects.filter(hub_id=hub, parent=category).update(parent=category.parent)
@@ -373,7 +374,7 @@ def variant_add(request, service_pk):
     hub = _hub(request)
     service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=service_pk).first()
     if not service:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if request.method == 'POST':
         form = ServiceVariantForm(request.POST)
@@ -395,7 +396,7 @@ def variant_edit(request, pk):
     hub = _hub(request)
     variant = ServiceVariant.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not variant:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if request.method == 'POST':
         form = ServiceVariantForm(request.POST, instance=variant)
@@ -415,7 +416,7 @@ def variant_delete(request, pk):
     hub = _hub(request)
     variant = ServiceVariant.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not variant:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     variant.is_deleted = True
     variant.deleted_at = timezone.now()
@@ -463,7 +464,7 @@ def addon_edit(request, pk):
     hub = _hub(request)
     addon = ServiceAddon.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not addon:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if request.method == 'POST':
         form = ServiceAddonForm(request.POST, instance=addon)
@@ -484,7 +485,7 @@ def addon_delete(request, pk):
     hub = _hub(request)
     addon = ServiceAddon.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not addon:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     addon.is_deleted = True
     addon.deleted_at = timezone.now()
@@ -514,7 +515,7 @@ def package_detail(request, pk):
     hub = _hub(request)
     package = ServicePackage.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not package:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     items = ServicePackageItem.objects.filter(
         package=package, is_deleted=False
@@ -552,7 +553,7 @@ def package_edit(request, pk):
     hub = _hub(request)
     package = ServicePackage.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not package:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     if request.method == 'POST':
         form = ServicePackageForm(request.POST, request.FILES, instance=package)
@@ -572,7 +573,7 @@ def package_delete(request, pk):
     hub = _hub(request)
     package = ServicePackage.objects.filter(hub_id=hub, is_deleted=False, pk=pk).first()
     if not package:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     package.is_deleted = True
     package.deleted_at = timezone.now()
@@ -652,7 +653,7 @@ def api_service_detail(request, pk):
     hub = _hub(request)
     service = Service.objects.filter(hub_id=hub, is_deleted=False, pk=pk).select_related('category').first()
     if not service:
-        return JsonResponse({'error': 'Not found'}, status=404)
+        return JsonResponse({'error': _('Not found')}, status=404)
 
     variants = [{
         'id': str(v.pk),
@@ -749,7 +750,7 @@ def settings_toggle(request):
     toggleable = ['show_prices', 'show_duration', 'allow_online_booking', 'include_tax_in_price']
 
     if field not in toggleable:
-        return JsonResponse({'error': 'Invalid field'}, status=400)
+        return JsonResponse({'error': _('Invalid field')}, status=400)
 
     setattr(s, field, not getattr(s, field))
     s.save()
@@ -782,7 +783,7 @@ def settings_input(request):
     elif field in text_fields:
         setattr(s, field, str(value)[:3] if field == 'currency' else str(value))
     else:
-        return JsonResponse({'error': 'Invalid field'}, status=400)
+        return JsonResponse({'error': _('Invalid field')}, status=400)
 
     s.save()
     return JsonResponse({'success': True, 'value': str(getattr(s, field))})

@@ -1,5 +1,6 @@
 {% load djicons i18n djicons djicons %}
 
+{% trans "Uncategorized" as uncategorized_text %}
 {% if services %}
 <div class="card">
     <div class="card-body p-0">
@@ -21,7 +22,7 @@
                 <div class="list-item-content">
                     <div class="list-item-label">{{ service.name }}</div>
                     <div class="list-item-note">
-                        {{ service.category.name|default:_("Uncategorized") }}
+                        {{ service.category.name|default:uncategorized_text }}
                         &middot; {{ service.duration_minutes }} {% trans "min" %}
                         &middot; {{ service.get_pricing_type_display }}
                     </div>

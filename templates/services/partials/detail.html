@@ -1,5 +1,6 @@
 {% load djicons i18n djicons djicons %}
 
+{% trans "Uncategorized" as uncategorized_text %}
 <div class="p-4">
     <!-- Back Button -->
     <button type="button"
@@ -25,7 +26,7 @@
                     </div>
                     <div>
                         <h2 class="card-title">{{ service.name }}</h2>
-                        <p class="text-sm opacity-60">{{ service.category.name|default:_("Uncategorized") }}{% if service.sku %} &middot; {{ service.sku }}{% endif %}</p>
+                        <p class="text-sm opacity-60">{{ service.category.name|default:uncategorized_text }}{% if service.sku %} &middot; {{ service.sku }}{% endif %}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">

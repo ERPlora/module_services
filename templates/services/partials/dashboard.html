@@ -1,5 +1,6 @@
 {% load djicons i18n djicons djicons %}
 
+{% trans "Uncategorized" as uncategorized_text %}
 <div class="p-4">
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -147,7 +148,7 @@
                     </div>
                     <div class="list-item-content">
                         <div class="list-item-label">{{ service.name }}</div>
-                        <div class="list-item-note">{{ service.category.name|default:_("Uncategorized") }}</div>
+                        <div class="list-item-note">{{ service.category.name|default:uncategorized_text }}</div>
                     </div>
                     <div class="list-item-end">
                         <span class="font-semibold">{{ service.price }} &euro;</span>

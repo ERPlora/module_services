@@ -8,6 +8,10 @@ app_name = 'services'
 urlpatterns = [
     # Dashboard
     path('', views.index, name='index'),
+
+    # Navigation tab aliases
+    path('services/', views.service_list, name='services'),
+
     path('dashboard/', views.dashboard, name='dashboard'),
 
     # Services CRUD

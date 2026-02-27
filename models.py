@@ -27,17 +27,18 @@ from apps.core.models import HubBaseModel
 class ServicesSettings(HubBaseModel):
     """Per-hub services configuration."""
 
-    default_duration = models.PositiveIntegerField(default=60, help_text=_('Default service duration in minutes'))
-    default_buffer_time = models.PositiveIntegerField(default=0, help_text=_('Default buffer time between services'))
+    default_duration = models.PositiveIntegerField(verbose_name=_('Default Duration'), default=60, help_text=_('Default service duration in minutes'))
+    default_buffer_time = models.PositiveIntegerField(verbose_name=_('Default Buffer Time'), default=0, help_text=_('Default buffer time between services'))
     default_tax_rate = models.DecimalField(
+        verbose_name=_('Default Tax Rate'),
         max_digits=5, decimal_places=2, default=Decimal('21.00'),
         validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
     )
-    show_prices = models.BooleanField(default=True, help_text=_('Display prices in catalog'))
-    show_duration = models.BooleanField(default=True, help_text=_('Display duration in catalog'))
-    allow_online_booking = models.BooleanField(default=True)
-    include_tax_in_price = models.BooleanField(default=True, help_text=_('Prices include tax'))
-    currency = models.CharField(max_length=3, default='EUR')
+    show_prices = models.BooleanField(verbose_name=_('Show Prices'), default=True, help_text=_('Display prices in catalog'))
+    show_duration = models.BooleanField(verbose_name=_('Show Duration'), default=True, help_text=_('Display duration in catalog'))
+    allow_online_booking = models.BooleanField(verbose_name=_('Allow Online Booking'), default=True)
+    include_tax_in_price = models.BooleanField(verbose_name=_('Include Tax in Price'), default=True, help_text=_('Prices include tax'))
+    currency = models.CharField(verbose_name=_('Currency'), max_length=3, default='EUR')
 
     class Meta(HubBaseModel.Meta):
         db_table = 'services_settings'
@@ -61,18 +62,18 @@ class ServicesSettings(HubBaseModel):
 class ServiceCategory(HubBaseModel):
     """Hierarchical service categories."""
 
-    name = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=100)
-    description = models.TextField(blank=True)
+    name = models.CharField(verbose_name=_('Name'), max_length=100)
+    slug = models.SlugField(verbose_name=_('Slug'), max_length=100)
+    description = models.TextField(verbose_name=_('Description'), blank=True)
     parent = models.ForeignKey(
         'self', on_delete=models.CASCADE,
-        null=True, blank=True, related_name='children',
+        verbose_name=_('Parent'), null=True, blank=True, related_name='children',
     )
-    icon = models.CharField(max_length=50, blank=True, help_text=_("Icon name"))
-    color = models.CharField(max_length=7, blank=True, help_text=_("Hex color"))
-    image = models.ImageField(upload_to='services/categories/', blank=True, null=True)
-    sort_order = models.PositiveIntegerField(default=0)
-    is_active = models.BooleanField(default=True)
+    icon = models.CharField(verbose_name=_('Icon'), max_length=50, blank=True, help_text=_("Icon name"))
+    color = models.CharField(verbose_name=_('Color'), max_length=7, blank=True, help_text=_("Hex color"))
+    image = models.ImageField(verbose_name=_('Image'), upload_to='services/categories/', blank=True, null=True)
+    sort_order = models.PositiveIntegerField(verbose_name=_('Sort Order'), default=0)
+    is_active = models.BooleanField(verbose_name=_('Is Active'), default=True)
 
     class Meta(HubBaseModel.Meta):
         db_table = 'services_category'
@@ -139,53 +140,54 @@ class Service(HubBaseModel):
     ]
 
     # Basic info
-    name = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=200)
-    description = models.TextField(blank=True)
-    short_description = models.CharField(max_length=200, blank=True)
+    name = models.CharField(verbose_name=_('Name'), max_length=200)
+    slug = models.SlugField(verbose_name=_('Slug'), max_length=200)
+    description = models.TextField(verbose_name=_('Description'), blank=True)
+    short_description = models.CharField(verbose_name=_('Short Description'), max_length=200, blank=True)
     category = models.ForeignKey(
         ServiceCategory, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='services',
+        verbose_name=_('Category'), null=True, blank=True, related_name='services',
     )
 
     # Pricing
-    pricing_type = models.CharField(max_length=20, choices=PRICING_TYPE_CHOICES, default='fixed')
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0'))])
-    min_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
-    max_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
-    cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0'))], help_text=_('Internal cost'))
+    pricing_type = models.CharField(verbose_name=_('Pricing Type'), max_length=20, choices=PRICING_TYPE_CHOICES, default='fixed')
+    price = models.DecimalField(verbose_name=_('Price'), max_digits=10, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0'))])
+    min_price = models.DecimalField(verbose_name=_('Minimum Price'), max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    max_price = models.DecimalField(verbose_name=_('Maximum Price'), max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    cost = models.DecimalField(verbose_name=_('Cost'), max_digits=10, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0'))], help_text=_('Internal cost'))
     tax_rate = models.DecimalField(
+        verbose_name=_('Tax Rate'),
         max_digits=5, decimal_places=2, null=True, blank=True,
         validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
     )
 
     # Duration
-    duration_minutes = models.PositiveIntegerField(default=60, validators=[MinValueValidator(5)])
-    buffer_before = models.PositiveIntegerField(default=0, help_text=_('Preparation time'))
-    buffer_after = models.PositiveIntegerField(default=0, help_text=_('Cleanup time'))
+    duration_minutes = models.PositiveIntegerField(verbose_name=_('Duration (minutes)'), default=60, validators=[MinValueValidator(5)])
+    buffer_before = models.PositiveIntegerField(verbose_name=_('Buffer Before'), default=0, help_text=_('Preparation time'))
+    buffer_after = models.PositiveIntegerField(verbose_name=_('Buffer After'), default=0, help_text=_('Cleanup time'))
 
     # Capacity
-    max_capacity = models.PositiveIntegerField(default=1, help_text=_('Max simultaneous bookings'))
+    max_capacity = models.PositiveIntegerField(verbose_name=_('Max Capacity'), default=1, help_text=_('Max simultaneous bookings'))
 
     # Media
-    image = models.ImageField(upload_to='services/', blank=True, null=True)
-    icon = models.CharField(max_length=50, blank=True)
-    color = models.CharField(max_length=7, blank=True)
+    image = models.ImageField(verbose_name=_('Image'), upload_to='services/', blank=True, null=True)
+    icon = models.CharField(verbose_name=_('Icon'), max_length=50, blank=True)
+    color = models.CharField(verbose_name=_('Color'), max_length=7, blank=True)
 
     # Booking options
-    is_bookable = models.BooleanField(default=True, help_text=_('Can be booked through appointments'))
-    requires_confirmation = models.BooleanField(default=False)
-    allow_online_booking = models.BooleanField(default=True)
+    is_bookable = models.BooleanField(verbose_name=_('Is Bookable'), default=True, help_text=_('Can be booked through appointments'))
+    requires_confirmation = models.BooleanField(verbose_name=_('Requires Confirmation'), default=False)
+    allow_online_booking = models.BooleanField(verbose_name=_('Allow Online Booking'), default=True)
 
     # Display
-    sort_order = models.PositiveIntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-    is_featured = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(verbose_name=_('Sort Order'), default=0)
+    is_active = models.BooleanField(verbose_name=_('Is Active'), default=True)
+    is_featured = models.BooleanField(verbose_name=_('Is Featured'), default=False)
 
     # Metadata
-    sku = models.CharField(max_length=50, blank=True)
-    barcode = models.CharField(max_length=50, blank=True)
-    notes = models.TextField(blank=True)
+    sku = models.CharField(verbose_name=_('SKU'), max_length=50, blank=True)
+    barcode = models.CharField(verbose_name=_('Barcode'), max_length=50, blank=True)
+    notes = models.TextField(verbose_name=_('Notes'), blank=True)
 
     class Meta(HubBaseModel.Meta):
         db_table = 'services_service'
@@ -268,13 +270,13 @@ class Service(HubBaseModel):
 class ServiceVariant(HubBaseModel):
     """Variant of a service with price/duration adjustments."""
 
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='variants')
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    price_adjustment = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text=_('Added to base price'))
-    duration_adjustment = models.IntegerField(default=0, help_text=_('Added to base duration (min)'))
-    sort_order = models.PositiveIntegerField(default=0)
-    is_active = models.BooleanField(default=True)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name=_('Service'), related_name='variants')
+    name = models.CharField(verbose_name=_('Name'), max_length=100)
+    description = models.TextField(verbose_name=_('Description'), blank=True)
+    price_adjustment = models.DecimalField(verbose_name=_('Price Adjustment'), max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text=_('Added to base price'))
+    duration_adjustment = models.IntegerField(verbose_name=_('Duration Adjustment'), default=0, help_text=_('Added to base duration (min)'))
+    sort_order = models.PositiveIntegerField(verbose_name=_('Sort Order'), default=0)
+    is_active = models.BooleanField(verbose_name=_('Is Active'), default=True)
 
     class Meta(HubBaseModel.Meta):
         db_table = 'services_variant'
@@ -302,12 +304,12 @@ class ServiceVariant(HubBaseModel):
 class ServiceAddon(HubBaseModel):
     """Add-on that can be added to services."""
 
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0'))])
-    duration_minutes = models.PositiveIntegerField(default=0)
-    services = models.ManyToManyField(Service, blank=True, related_name='addons')
-    is_active = models.BooleanField(default=True)
+    name = models.CharField(verbose_name=_('Name'), max_length=100)
+    description = models.TextField(verbose_name=_('Description'), blank=True)
+    price = models.DecimalField(verbose_name=_('Price'), max_digits=10, decimal_places=2, default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0'))])
+    duration_minutes = models.PositiveIntegerField(verbose_name=_('Duration (minutes)'), default=0)
+    services = models.ManyToManyField(Service, verbose_name=_('Services'), blank=True, related_name='addons')
+    is_active = models.BooleanField(verbose_name=_('Is Active'), default=True)
 
     class Meta(HubBaseModel.Meta):
         db_table = 'services_addon'
@@ -331,19 +333,19 @@ class ServicePackage(HubBaseModel):
         ('fixed', _('Fixed Amount')),
     ]
 
-    name = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=200)
-    description = models.TextField(blank=True)
-    services = models.ManyToManyField(Service, through='ServicePackageItem', related_name='packages')
-    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES, default='percentage')
-    discount_value = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    fixed_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text=_('Overrides calculated price'))
-    validity_days = models.PositiveIntegerField(null=True, blank=True, help_text=_('Days to use after purchase'))
-    max_uses = models.PositiveIntegerField(null=True, blank=True)
-    image = models.ImageField(upload_to='services/packages/', blank=True, null=True)
-    sort_order = models.PositiveIntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-    is_featured = models.BooleanField(default=False)
+    name = models.CharField(verbose_name=_('Name'), max_length=200)
+    slug = models.SlugField(verbose_name=_('Slug'), max_length=200)
+    description = models.TextField(verbose_name=_('Description'), blank=True)
+    services = models.ManyToManyField(Service, verbose_name=_('Services'), through='ServicePackageItem', related_name='packages')
+    discount_type = models.CharField(verbose_name=_('Discount Type'), max_length=20, choices=DISCOUNT_TYPE_CHOICES, default='percentage')
+    discount_value = models.DecimalField(verbose_name=_('Discount Value'), max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    fixed_price = models.DecimalField(verbose_name=_('Fixed Price'), max_digits=10, decimal_places=2, null=True, blank=True, help_text=_('Overrides calculated price'))
+    validity_days = models.PositiveIntegerField(verbose_name=_('Validity Days'), null=True, blank=True, help_text=_('Days to use after purchase'))
+    max_uses = models.PositiveIntegerField(verbose_name=_('Max Uses'), null=True, blank=True)
+    image = models.ImageField(verbose_name=_('Image'), upload_to='services/packages/', blank=True, null=True)
+    sort_order = models.PositiveIntegerField(verbose_name=_('Sort Order'), default=0)
+    is_active = models.BooleanField(verbose_name=_('Is Active'), default=True)
+    is_featured = models.BooleanField(verbose_name=_('Is Featured'), default=False)
 
     class Meta(HubBaseModel.Meta):
         db_table = 'services_package'
@@ -394,10 +396,10 @@ class ServicePackage(HubBaseModel):
 class ServicePackageItem(HubBaseModel):
     """Through model for package-service relationship."""
 
-    package = models.ForeignKey(ServicePackage, on_delete=models.CASCADE, related_name='items')
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='package_items')
-    quantity = models.PositiveIntegerField(default=1)
-    sort_order = models.PositiveIntegerField(default=0)
+    package = models.ForeignKey(ServicePackage, on_delete=models.CASCADE, verbose_name=_('Package'), related_name='items')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name=_('Service'), related_name='package_items')
+    quantity = models.PositiveIntegerField(verbose_name=_('Quantity'), default=1)
+    sort_order = models.PositiveIntegerField(verbose_name=_('Sort Order'), default=0)
 
     class Meta(HubBaseModel.Meta):
         db_table = 'services_packageitem'

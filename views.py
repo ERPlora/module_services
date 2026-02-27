@@ -10,7 +10,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST, require_GET
 
-from apps.accounts.decorators import login_required
+from apps.accounts.decorators import login_required, permission_required
 from apps.core.htmx import htmx_view
 from apps.modules_runtime.navigation import with_module_nav
 
@@ -699,6 +699,7 @@ def api_service_detail(request, pk):
 # =============================================================================
 
 @login_required
+@permission_required('services.manage_settings')
 @with_module_nav('services', 'settings')
 @htmx_view('services/pages/settings.html', 'services/partials/settings.html')
 def settings(request):
@@ -710,6 +711,7 @@ def settings(request):
 
 
 @login_required
+@permission_required('services.manage_settings')
 @require_POST
 def settings_save(request):
     """Save settings from JSON body."""
@@ -735,6 +737,7 @@ def settings_save(request):
 
 
 @login_required
+@permission_required('services.manage_settings')
 @require_POST
 def settings_toggle(request):
     """Toggle boolean setting."""

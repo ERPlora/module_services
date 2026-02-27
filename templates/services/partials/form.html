@@ -1,16 +1,7 @@
 {% load djicons i18n djicons djicons %}
+<div data-back-url="{% if mode == 'edit' %}{% url 'services:detail' service.pk %}{% else %}{% url 'services:list' %}{% endif %}" hidden></div>
 
 <div class="p-4">
-    <!-- Back Button -->
-    <button type="button"
-            hx-get="{% if mode == 'edit' %}{% url 'services:detail' service.pk %}{% else %}{% url 'services:list' %}{% endif %}"
-            hx-target="#main-content-area"
-            hx-push-url="true"
-            class="btn btn-ghost mb-3">
-        {% icon "arrow-back-outline" %}
-        {% if mode == 'edit' %}{% trans "Back to Service" %}{% else %}{% trans "Back to Services" %}{% endif %}
-    </button>
-
     <form id="serviceForm" method="post">
         {% csrf_token %}
 
@@ -256,10 +247,10 @@ document.getElementById('serviceForm').addEventListener('submit', async function
             for (const [field, errs] of Object.entries(result.errors)) {
                 msg.push(field + ': ' + errs.join(', '));
             }
-            alert(msg.join('\n'));
+            showToast(msg.join(', '), 'error');
         }
     } catch (error) {
-        alert('{% trans "Error saving service" %}');
+        showToast('{% trans "Error saving service" %}', 'error');
     }
 });
 </script>

@@ -1,17 +1,8 @@
 {% load djicons i18n djicons djicons %}
+<div data-back-url="{% url 'services:list' %}" hidden></div>
 
 {% trans "Uncategorized" as uncategorized_text %}
 <div class="p-4">
-    <!-- Back Button -->
-    <button type="button"
-            hx-get="{% url 'services:list' %}"
-            hx-target="#main-content-area"
-            hx-push-url="true"
-            class="btn btn-ghost mb-3">
-        {% icon "arrow-back-outline" %}
-        {% trans "Back to Services" %}
-    </button>
-
     <!-- Service Header Card -->
     <div class="card mb-4">
         <div class="card-header">

@@ -74,7 +74,7 @@ function addAddon() {
         if (data.success) {
             htmx.ajax('GET', '{% url "services:addon_list" %}', '#main-content-area');
         } else if (data.errors) {
-            alert(JSON.stringify(data.errors));
+            showToast(Object.values(data.errors).flat().join(', '), 'error');
         }
     });
 }

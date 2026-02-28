@@ -128,7 +128,7 @@ class ServiceFilterForm(forms.Form):
     q = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'input', 'placeholder': _('Search services...')}))
     category = forms.ModelChoiceField(required=False, queryset=ServiceCategory.objects.none(), widget=forms.Select(attrs={'class': 'select'}))
     pricing_type = forms.ChoiceField(required=False, choices=[('', _('All types'))] + Service.PRICING_TYPE_CHOICES, widget=forms.Select(attrs={'class': 'select'}))
-    is_active = forms.NullBooleanField(required=False, widget=forms.Select(attrs={'class': 'select'}, choices=[('', _('All')), ('true', _('Active')), ('false', _('Inactive'))]))
+    is_active = forms.ChoiceField(required=False, choices=[('', _('All')), ('true', _('Active')), ('false', _('Inactive'))], widget=forms.Select(attrs={'class': 'select'}))
 
 
 class ServicesSettingsForm(forms.ModelForm):

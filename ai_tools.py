@@ -104,3 +104,72 @@ class ListServiceCategories(AssistantTool):
                 for c in ServiceCategory.objects.all()
             ]
         }
+
+
+@register_tool
+class CreateServiceCategory(AssistantTool):
+    name = "create_service_category"
+    description = "Create a service category (e.g., 'Cortes', 'Color', 'Tratamientos')."
+    module_id = "services"
+    required_permission = "services.change_service"
+    requires_confirmation = True
+    parameters = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "description": "Category name"},
+            "icon": {"type": "string", "description": "Icon name"},
+            "color": {"type": "string", "description": "Hex color"},
+        },
+        "required": ["name"],
+        "additionalProperties": False,
+    }
+
+    def execute(self, args, request):
+        from django.utils.text import slugify
+        from services.models import ServiceCategory
+        c = ServiceCategory.objects.create(
+            name=args['name'],
+            slug=slugify(args['name']),
+            icon=args.get('icon', ''),
+            color=args.get('color', ''),
+        )
+        return {"id": str(c.id), "name": c.name, "created": True}
+
+
+@register_tool
+class UpdateService(AssistantTool):
+    name = "update_service"
+    description = "Update an existing service."
+    module_id = "services"
+    required_permission = "services.change_service"
+    requires_confirmation = True
+    parameters = {
+        "type": "object",
+        "properties": {
+            "service_id": {"type": "string", "description": "Service ID"},
+            "name": {"type": "string"}, "price": {"type": "string"},
+            "duration_minutes": {"type": "integer"}, "description": {"type": "string"},
+            "is_bookable": {"type": "boolean"}, "category_id": {"type": "string"},
+        },
+        "required": ["service_id"],
+        "additionalProperties": False,
+    }
+
+    def execute(self, args, request):
+        from decimal import Decimal
+        from services.models import Service
+        s = Service.objects.get(id=args['service_id'])
+        if 'name' in args:
+            s.name = args['name']
+        if 'price' in args:
+            s.price = Decimal(args['price'])
+        if 'duration_minutes' in args:
+            s.duration_minutes = args['duration_minutes']
+        if 'description' in args:
+            s.description = args['description']
+        if 'is_bookable' in args:
+            s.is_bookable = args['is_bookable']
+        if 'category_id' in args:
+            s.category_id = args['category_id']
+        s.save()
+        return {"id": str(s.id), "name": s.name, "updated": True}

@@ -51,6 +51,10 @@ class CreateService(AssistantTool):
     module_id = "services"
     required_permission = "services.change_service"
     requires_confirmation = True
+    examples = [
+        {"name": "Corte + Peinado", "price": "25.00", "duration_minutes": 45, "pricing_type": "fixed"},
+        {"name": "Consulta Inicial", "price": "0", "duration_minutes": 30, "pricing_type": "free", "is_bookable": True},
+    ]
     parameters = {
         "type": "object",
         "properties": {

@@ -33,3 +33,24 @@ PERMISSIONS = [
     'services.delete_package',
     'services.manage_settings',
 ]
+
+ROLE_PERMISSIONS = {
+    "admin": ["*"],
+    "manager": [
+        "add_category",
+        "add_package",
+        "add_service",
+        "change_category",
+        "change_package",
+        "change_service",
+        "view_category",
+        "view_package",
+        "view_service",
+    ],
+    "employee": [
+        "add_service",
+        "view_category",
+        "view_package",
+        "view_service",
+    ],
+}

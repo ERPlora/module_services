@@ -237,8 +237,7 @@ document.getElementById('serviceForm').addEventListener('submit', async function
         const response = await fetch(form.action || window.location.href, {
             method: 'POST',
             body: formData,
-            headers: {'X-CSRFToken': formData.get('csrfmiddlewaretoken')},
-        });
+            headers: {'X-CSRFToken': formData.get('csrfmiddlewaretoken')}},
         const result = await response.json();
         if (result.success) {
             htmx.ajax('GET', '{% url "services:list" %}', '#main-content-area');
@@ -252,5 +251,5 @@ document.getElementById('serviceForm').addEventListener('submit', async function
     } catch (error) {
         showToast('{% trans "Error saving service" %}', 'error');
     }
-});
+},
 </script>

@@ -149,8 +149,7 @@ function deletePackage() {
     if (confirm('{% trans "Delete this package permanently?" %}')) {
         fetch('{% url "services:package_delete" package.pk %}', {
             method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        }).then(r => r.json()).then(data => {
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}}).then(r => r.json()).then(data => {
             if (data.success) htmx.ajax('GET', '{% url "services:package_list" %}', '#main-content-area');
         });
     }

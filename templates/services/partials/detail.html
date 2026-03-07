@@ -272,18 +272,15 @@ function duplicateService() {
 function toggleService() {
     fetch('{% url "services:toggle" service.pk %}', {
         method: 'POST',
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-    }).then(r => r.json()).then(data => {
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}}).then(r => r.json()).then(data => {
         if (data.success) htmx.ajax('GET', '{% url "services:detail" service.pk %}', '#main-content-area');
     });
-}
 
 function deleteService() {
     if (confirm('{% trans "Delete this service permanently?" %}')) {
         fetch('{% url "services:delete" service.pk %}', {
             method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        }).then(r => r.json()).then(data => {
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}}).then(r => r.json()).then(data => {
             if (data.success) htmx.ajax('GET', '{% url "services:list" %}', '#main-content-area');
         });
     }

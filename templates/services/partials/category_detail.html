@@ -131,8 +131,7 @@ function deleteCategory() {
     if (confirm('{% trans "Delete this category? Services will be moved to parent." %}')) {
         fetch('{% url "services:category_delete" category.pk %}', {
             method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        }).then(r => r.json()).then(data => {
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}}).then(r => r.json()).then(data => {
             if (data.success) htmx.ajax('GET', '{% url "services:categories" %}', '#main-content-area');
         });
     }

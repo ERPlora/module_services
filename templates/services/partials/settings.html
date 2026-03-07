@@ -206,8 +206,7 @@ function resetSettings() {
     if (confirm('{% trans "Reset all settings to defaults?" %}')) {
         fetch('{% url "services:settings_reset" %}', {
             method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        }).then(r => {
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}}).then(r => {
             if (r.ok) htmx.ajax('GET', '{% url "services:settings" %}', '#main-content-area');
         });
     }

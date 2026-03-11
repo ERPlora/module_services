@@ -155,6 +155,8 @@ def service_create(request):
             service.hub_id = hub
             if not service.slug:
                 service.slug = slugify(service.name)
+            from apps.core.media_helpers import handle_image_field
+            handle_image_field(request, service, 'image')
             service.save()
             return JsonResponse({'success': True, 'id': str(service.pk), 'name': service.name})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
@@ -185,6 +187,8 @@ def service_edit(request, pk):
         if form.is_valid():
             service = form.save(commit=False)
             service.updated_at = timezone.now()
+            from apps.core.media_helpers import handle_image_field
+            handle_image_field(request, service, 'image')
             service.save()
             return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
@@ -313,6 +317,8 @@ def category_add(request):
             category.hub_id = hub
             if not category.slug:
                 category.slug = slugify(category.name)
+            from apps.core.media_helpers import handle_image_field
+            handle_image_field(request, category, 'image')
             category.save()
             return JsonResponse({'success': True, 'id': str(category.pk), 'name': category.name})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
@@ -333,7 +339,10 @@ def category_edit(request, pk):
     if request.method == 'POST':
         form = ServiceCategoryForm(request.POST, request.FILES, instance=category)
         if form.is_valid():
-            form.save()
+            instance = form.save()
+            from apps.core.media_helpers import handle_image_field
+            if handle_image_field(request, instance, 'image'):
+                instance.save()
             return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
@@ -539,6 +548,8 @@ def package_add(request):
             package.hub_id = hub
             if not package.slug:
                 package.slug = slugify(package.name)
+            from apps.core.media_helpers import handle_image_field
+            handle_image_field(request, package, 'image')
             package.save()
             return JsonResponse({'success': True, 'id': str(package.pk), 'name': package.name})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
@@ -558,7 +569,10 @@ def package_edit(request, pk):
     if request.method == 'POST':
         form = ServicePackageForm(request.POST, request.FILES, instance=package)
         if form.is_valid():
-            form.save()
+            instance = form.save()
+            from apps.core.media_helpers import handle_image_field
+            if handle_image_field(request, instance, 'image'):
+                instance.save()
             return JsonResponse({'success': True})
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 

@@ -2,7 +2,7 @@
 <div data-back-url="{% if mode == 'edit' %}{% url 'services:detail' service.pk %}{% else %}{% url 'services:list' %}{% endif %}" hidden></div>
 
 <div class="p-4">
-    <form id="serviceForm" method="post">
+    <form id="serviceForm" method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
         <!-- Basic Information -->
@@ -30,6 +30,15 @@
                 <div class="mb-4">
                     <label class="form-group-label mb-1" for="id_description">{% trans "Description" %}</label>
                     {{ form.description }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-group-label mb-1">{% trans "Image" %}</label>
+                    {% if mode == 'edit' and service.image %}
+                    {% include "core/components/media_picker.html" with field_name="image" current_url=service.image.url folder="services" %}
+                    {% else %}
+                    {% include "core/components/media_picker.html" with field_name="image" current_url="" folder="services" %}
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -74,7 +74,8 @@ function addAddon() {
         } else if (data.errors) {
             showToast(Object.values(data.errors).flat().join(', '), 'error');
         }
-    },
+    });
+}
 
 function deleteAddon(pk, name) {
     if (confirm('{% trans "Delete addon" %} "' + name + '"?')) {
